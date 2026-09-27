@@ -1,1 +1,68 @@
-bmFtZTogQnVpbGQgQVBLCgoib24iOgogIHdvcmtmbG93X2Rpc3BhdGNoOiB7fQogIHB1c2g6CiAgICBicmFuY2hlczoKICAgICAgLSBtYWluCgpqb2JzOgogIGJ1aWxkOgogICAgcnVucy1vbjogdWJ1bnR1LWxhdGVzdAogICAgc3RlcHM6CiAgICAgIC0gbmFtZTogQ2hlY2tvdXQKICAgICAgICB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CgogICAgICAtIG5hbWU6IFNldHVwIEphdmEgMTcKICAgICAgICB1c2VzOiBhY3Rpb25zL3NldHVwLWphdmFAdjQKICAgICAgICB3aXRoOgogICAgICAgICAgZGlzdHJpYnV0aW9uOiB0ZW11cmluCiAgICAgICAgICBqYXZhLXZlcnNpb246ICcxNycKCiAgICAgIC0gbmFtZTogU2V0dXAgR3JhZGxlCiAgICAgICAgdXNlczogZ3JhZGxlL2FjdGlvbnMvc2V0dXAtZ3JhZGxlQHY0CiAgICAgICAgd2l0aDoKICAgICAgICAgIGdyYWRsZS12ZXJzaW9uOiAnOC45JwoKICAgICAgLSBuYW1lOiBCdWlsZCBkZWJ1ZyBBUEsKICAgICAgICBydW46IGdyYWRsZSAtLW5vLWRhZW1vbiA6YXBwOmFzc2VtYmxlRGVidWcKCiAgICAgIC0gbmFtZTogUmVuYW1lIEFQSwogICAgICAgIHJ1bjogY3AgYXBwL2J1aWxkL291dHB1dHMvYXBrL2RlYnVnL2FwcC1kZWJ1Zy5hcGsgTWV1RGluaGVpcm8tdjAuMi4xLmFwawoKICAgICAgLSBuYW1lOiBVcGxvYWQgQVBLCiAgICAgICAgdXNlczogYWN0aW9ucy91cGxvYWQtYXJ0aWZhY3RAdjQKICAgICAgICB3aXRoOgogICAgICAgICAgbmFtZTogTWV1RGluaGVpcm8tdjAuMi4xLUFQSwogICAgICAgICAgcGF0aDogTWV1RGluaGVpcm8tdjAuMi4xLmFwawogICAgICAgICAgaWYtbm8tZmlsZXMtZm91bmQ6IGVycm9yCg==
+name: Build Meu Dinheiro APK
+
+"on":
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Corrigir arquivos enviados pelo Zip2Git
+        shell: bash
+        run: |
+          files=(
+            "build.gradle"
+            "settings.gradle"
+            "gradle.properties"
+            "README.txt"
+            "README-GITHUB.txt"
+            "app/build.gradle"
+            "app/proguard-rules.pro"
+            "app/src/main/AndroidManifest.xml"
+            "app/src/main/assets/index.html"
+            "app/src/main/java/com/michael/meudinheiro/MainActivity.java"
+            "app/src/main/res/values/styles.xml"
+          )
+
+          for f in "${files[@]}"; do
+            echo "Decodificando $f"
+            base64 --decode "$f" > "$f.tmp"
+            mv "$f.tmp" "$f"
+          done
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Preparar Android SDK 35
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Compilar APK
+        run: gradle --no-daemon :app:assembleDebug
+
+      - name: Preparar APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk MeuDinheiro-v0.2.1.apk
+
+      - name: Disponibilizar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeuDinheiro-v0.2.1-APK
+          path: MeuDinheiro-v0.2.1.apk
+          if-no-files-found: error
