@@ -52,19 +52,31 @@ jobs:
         shell: bash
         run: |
           SDKMANAGER="$(find /usr/local/lib/android/sdk/cmdline-tools -type f -name sdkmanager | head -n 1)"
-          echo "Usando: $SDKMANAGER"
           yes | "$SDKMANAGER" --licenses > /dev/null || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Compilar APK
-        run: gradle --no-daemon :app:assembleDebug
+      - name: Preparar assinatura fixa
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.MD_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_B64" || (echo "MD_KEYSTORE_BASE64 não configurado" && exit 1)
+          echo "$KEYSTORE_B64" | base64 --decode > app/meudinheiro-release.jks
+
+      - name: Compilar APK assinado
+        env:
+          MD_KEYSTORE_FILE: meudinheiro-release.jks
+          MD_KEYSTORE_PASSWORD: ${{ secrets.MD_KEYSTORE_PASSWORD }}
+          MD_KEY_ALIAS: ${{ secrets.MD_KEY_ALIAS }}
+          MD_KEY_PASSWORD: ${{ secrets.MD_KEY_PASSWORD }}
+        run: gradle --no-daemon :app:assembleRelease
 
       - name: Preparar APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk MeuDinheiro-v0.2.1.apk
+        run: cp app/build/outputs/apk/release/app-release.apk MeuDinheiro-release.apk
 
       - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
         with:
-          name: MeuDinheiro-v0.2.1-APK
-          path: MeuDinheiro-v0.2.1.apk
+          name: MeuDinheiro-APK
+          path: MeuDinheiro-release.apk
           if-no-files-found: error
