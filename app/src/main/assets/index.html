@@ -51,6 +51,7 @@
     .cm-row{display:grid;grid-template-columns:36px 1fr 38px 38px;gap:8px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line)}.cm-row:last-child{border-bottom:0}.cm-ico{font-size:22px;text-align:center}.cm-n{font-size:11px;color:var(--muted);margin-top:2px}.cm-row button{width:38px;height:36px;border-radius:10px;border:1px solid var(--line);background:#202735;color:#dfe7f1}
     .emoji-row{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}.emoji-row button{width:40px;height:40px;border-radius:11px;border:1px solid var(--line);background:#1c222e;font-size:19px}
     .linklike{background:none;border:none;color:var(--blue);font-size:13px;font-weight:650;padding:6px 0;text-align:left;width:100%}
+    .recv-banner{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 14px;padding:14px 16px;border-radius:16px;background:linear-gradient(135deg,#1a2740,#161b28);border:1px solid #2c3d5c;color:var(--text);text-align:left;cursor:pointer}.recv-banner .rb-ic{font-size:24px;width:42px;height:42px;border-radius:13px;background:#22314d;display:grid;place-items:center;flex:none}.recv-banner .rb-txt{flex:1;min-width:0}.recv-banner .rb-title{font-weight:700;font-size:14px}.recv-banner .rb-sub{font-size:12px;color:var(--muted);margin-top:2px}.recv-banner .rb-chev{color:var(--muted);font-size:18px}.recv-banner.done .rb-ic{background:#183226}
   </style>
 </head>
 <body>
@@ -93,7 +94,7 @@
   <section id="moves" class="page">
     <div class="section" style="margin-top:8px"><h2 id="moveTitle">Movimentações</h2><button id="moveAddBtn" onclick="openAdd(moveType==='income'?'income':'expense')">+ Novo</button></div>
     <p class="mini-note" style="margin-top:0">Toque em um lançamento para editar (valor, categoria, data…).</p>
-    <button class="linklike" id="moveRecvBtn" style="display:none" onclick="openReceivables()">💰 A receber este mês</button>
+    <button class="recv-banner" id="moveRecvBtn" style="display:none" onclick="openReceivables()"><span class="rb-ic">💰</span><span class="rb-txt"><span class="rb-title" id="moveRecvTitle">A receber este mês</span><div class="rb-sub" id="moveRecvSub">Toque para ver e registrar</div></span><span class="rb-chev">›</span></button>
     <div class="monthstrip" id="monthStrip"></div>
     <input class="search" id="moveSearch" placeholder="🔍 Buscar por nome, categoria ou forma…" oninput="setMoveQuery(this.value)" />
     <div class="monthstrip" id="moveTypes"></div>
@@ -159,7 +160,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.23 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.24 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -525,7 +526,7 @@ function setMoveType(t){moveType=t;renderMoves()}
 function renderMoves(){
   let list=document.getElementById('allList');if(!list)return;
   let mk=dashboardMonth,all=moveEntries(mk);
-  document.getElementById('moveTitle').textContent=moveType==='expense'?'Gastos':moveType==='income'?'Receitas':'Movimentações';document.getElementById('moveAddBtn').textContent=moveType==='expense'?'+ Novo gasto':moveType==='income'?'+ Nova receita':'+ Novo';document.getElementById('moveRecvBtn').style.display=moveType==='income'?'block':'none';let recvPend=receivablesProjected(mk);document.getElementById('moveRecvBtn').textContent=recvPend>0.004?`💰 A receber este mês · faltam ${brl(recvPend)}`:'💰 A receber este mês';
+  document.getElementById('moveTitle').textContent=moveType==='expense'?'Gastos':moveType==='income'?'Receitas':'Movimentações';document.getElementById('moveAddBtn').textContent=moveType==='expense'?'+ Novo gasto':moveType==='income'?'+ Nova receita':'+ Novo';document.getElementById('moveRecvBtn').style.display=moveType==='income'?'flex':'none';let recvPend=receivablesProjected(mk),recvHas=receivablesForMonth(mk).length>0,recvBtn=document.getElementById('moveRecvBtn');recvBtn.classList.toggle('done',recvHas&&recvPend<=0.004);document.getElementById('moveRecvSub').textContent=recvPend>0.004?`Faltam ${brl(recvPend)}`:(recvHas?'Tudo recebido este mês 🎉':'Toque para criar uma meta');
   let rows=all.filter(x=>moveType==='all'||x.type===moveType).filter(x=>!moveQuery||normalizeText([x.desc,x.category,x.account||'',x.meta||'',String(x.value).replace('.',',')].join(' ')).includes(moveQuery)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id);
   document.getElementById('moveTypes').innerHTML=[['all','Todos'],['expense','Saídas'],['income','Entradas']].map(([k,l])=>`<button class="pill${moveType===k?' active':''}" onclick="setMoveType('${k}')">${l}</button>`).join('');
   let inc=rows.filter(x=>x.type==='income').reduce((a,b)=>a+Number(b.value||0),0),exp=rows.filter(x=>x.type==='expense').reduce((a,b)=>a+Number(b.value||0),0);
