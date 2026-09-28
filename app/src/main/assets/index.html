@@ -113,7 +113,7 @@
     <div class="hero" style="margin-top:0"><div class="hero-label">Saldo previsto do mês</div><div class="balance" id="freeAfterFixed">R$ 0,00</div><div class="hero-row"><div class="mini"><span>Fixas + cartões</span><strong id="planFixed">R$ 0,00</strong></div><div class="mini"><span>Gastos variáveis</span><strong id="planVariable">R$ 0,00</strong></div></div></div>
     <div class="section"><h2>Gastos por categoria</h2></div>
     <div class="card" id="catList"></div>
-    <p class="mini-note">Toque numa categoria para definir um limite mensal. Conta lançamentos, contas fixas e gastos de cartão. Quando chegar em 80% ou passar do limite, o app avisa.</p>
+    <p class="mini-note">Toque numa categoria para ver os itens (e editar) ou definir um limite mensal. Conta lançamentos, contas fixas e gastos de cartão. Quando chegar em 80% ou passar do limite, o app avisa.</p>
     <div class="section"><h2>Entradas x saídas · 6 meses</h2></div>
     <div class="card" id="trendCard"></div>
     <div class="section"><h2>Metas</h2><button onclick="openGoal()">+ Meta</button></div>
@@ -155,7 +155,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.18 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.19 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -262,6 +262,14 @@
   <div class="field"><label>Ícone (opcional)</label><input id="ceIcon" maxlength="8" placeholder="🏷️" /></div>
   <div class="emoji-row" id="ceEmojis"></div>
   <button class="save" onclick="saveCatEdit()">Salvar categoria</button><button class="ghost" onclick="closeCatEdit()">Cancelar</button>
+</div></div>
+
+<div class="overlay" id="catDetailOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
+  <div class="handle"></div><h3 id="cdTitle">Categoria</h3>
+  <p class="mini-note" id="cdInfo"></p>
+  <div class="card" id="cdList"></div>
+  <button class="save" style="margin-top:14px" onclick="closeSheets();openLimit(cdCat)">🎯 Definir limite mensal</button>
+  <button class="ghost" onclick="closeSheets()">Fechar</button>
 </div></div>
 
 <div class="toast" id="toast"></div>
@@ -389,8 +397,9 @@ function copyPreviousInvoice(){
 function openInvoiceBase(){let c=selectedCard();if(!c)return showToast('Cadastre um cartão primeiro');document.getElementById('invoiceBaseValue').value=invoiceBase(c.id,currentInvoiceMonth)?invoiceBase(c.id,currentInvoiceMonth).toFixed(2).replace('.',','):'';document.getElementById('invoiceBaseHelp').textContent=`${c.name} · fatura ${monthLabel(currentInvoiceMonth)}. Informe o valor que ela já possui antes dos novos gastos.`;document.getElementById('invoiceBaseOverlay').classList.add('show')}
 function saveInvoiceBase(){let c=selectedCard();if(!c)return;let value=parseMoney(document.getElementById('invoiceBaseValue').value);let x=data.cardInvoices.find(i=>i.cardId===c.id&&i.month===currentInvoiceMonth);if(x)x.baseValue=value;else data.cardInvoices.push({id:Date.now(),cardId:c.id,month:currentInvoiceMonth,baseValue:value});dashboardMonth=currentInvoiceMonth;localStorage.setItem('md_dashboard_month',dashboardMonth);save();closeSheets();showToast('Valor da fatura atualizado')}
 function openCardItem(){let c=selectedCard();if(!c)return showToast('Cadastre um cartão primeiro');editingCardItemId=null;document.getElementById('ciTitle').textContent='Acrescentar gasto na fatura';document.getElementById('ciSaveBtn').textContent='Adicionar à fatura';document.getElementById('ciDeleteBtn').style.display='none';document.getElementById('ciInstBox').style.display='block';document.getElementById('ciEditNote').style.display='none';cats('expense',document.getElementById('ciCategory'));document.getElementById('ciValue').value='';document.getElementById('ciDesc').value='';document.getElementById('ciDate').value=iso(new Date());document.getElementById('ciInstallments').value=1;document.getElementById('cardItemOverlay').classList.add('show')}
-function saveCardItem(){let c=selectedCard();if(!c)return;let value=parseMoney(document.getElementById('ciValue').value),desc=document.getElementById('ciDesc').value.trim();if(!value||!desc)return showToast('Preencha valor e descrição');let category=document.getElementById('ciCategory').value,date=document.getElementById('ciDate').value||iso(new Date()),n=Math.round(Number(document.getElementById('ciInstallments').value)||1);n=Math.min(48,Math.max(1,n));dashboardMonth=currentInvoiceMonth;localStorage.setItem('md_dashboard_month',dashboardMonth);
+function saveCardItem(){let c=selectedCard();if(!c)return;let value=parseMoney(document.getElementById('ciValue').value),desc=document.getElementById('ciDesc').value.trim();if(!value||!desc)return showToast('Preencha valor e descrição');let category=document.getElementById('ciCategory').value,date=document.getElementById('ciDate').value||iso(new Date()),n=Math.round(Number(document.getElementById('ciInstallments').value)||1);n=Math.min(48,Math.max(1,n));
   if(editingCardItemId!==null){let it=data.cardItems.find(x=>x.id===editingCardItemId);editingCardItemId=null;if(!it)return showToast('Gasto não encontrado');let changedCat=it.category!==category;it.value=value;it.desc=desc;it.category=category;it.date=date;if(it.group&&changedCat)data.cardItems.forEach(x=>{if(x.group===it.group)x.category=category});save();closeSheets();showToast(it.group&&changedCat?'Categoria aplicada a todas as parcelas':'Gasto atualizado');return}
+  dashboardMonth=currentInvoiceMonth;localStorage.setItem('md_dashboard_month',dashboardMonth);
   if(n===1){data.cardItems.push({id:Date.now(),cardId:c.id,month:currentInvoiceMonth,value,desc,category,date});save();closeSheets();showToast(limitWarning(category,currentInvoiceMonth)||'Gasto acrescentado à fatura');return}
   let group=Date.now(),cents=Math.round(value*100),base=Math.floor(cents/n),rest=cents-base*n,day=Number(date.slice(8,10))||1;
   for(let i=0;i<n;i++){let month=monthPlus(currentInvoiceMonth,i);data.cardItems.push({id:group+i,cardId:c.id,month,value:(base+(i<rest?1:0))/100,desc:`${desc} (${i+1}/${n})`,category,date:i===0?date:dueDateForMonth(month,day),group,inst:i+1,instTotal:n})}
@@ -444,14 +453,14 @@ function monthCatTotals(mk){let cats={},add=(c,v)=>{c=c||'Outros';cats[c]=(cats[
 function limitWarning(cat,mk){let lim=Number(data.limits[cat]||0);if(!lim)return'';let pct=Math.round((monthCatTotals(mk).cats[cat]||0)/lim*100);return pct>=100?`⚠️ ${cat}: ${pct}% do limite`:pct>=80?`⚠️ ${cat}: ${pct}% do limite`:''}
 function shortMonth(k){let [y,m]=k.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}
 function fillMonthStrip(id){let el=document.getElementById(id);if(!el)return;let now=new Date(),months=[];for(let i=-6;i<=6;i++){let d=new Date(now.getFullYear(),now.getMonth()+i,1);months.push(iso(d).slice(0,7))}if(!months.includes(dashboardMonth))months.push(dashboardMonth);months=[...new Set(months)].sort();el.innerHTML=months.map(k=>{let [y,m]=k.split('-').map(Number),label=new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','');return `<button class="pill${k===dashboardMonth?' active':''}" onclick="setDashboardMonth('${k}')">${label}</button>`}).join('');setTimeout(()=>el.querySelector('.active')?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}),0)}
-function catRowHtml(c,spent,out,limit){let lim=Number(limit||0),pct=lim?spent/lim:0,cls='',w=0,sub,subcls='';if(lim){cls=pct>=1?'over':pct>=.8?'warn':'ok';subcls=cls==='ok'?'':cls;w=Math.min(100,pct*100);sub=pct>=1?`Estourou ${brl(spent-lim)} · ${Math.round(pct*100)}% de ${brl(lim)}`:`${Math.round(pct*100)}% de ${brl(lim)} · faltam ${brl(lim-spent)}`}else{let share=out?spent/out*100:0;w=Math.min(100,share);sub=`${Math.round(share)}% das saídas · toque para definir limite`}return `<div class="cat-row" data-cat="${esc(c)}" onclick="openLimit(this.dataset.cat)"><div class="icon">${icon(c)}</div><div><div class="cat-top"><b>${esc(c)}</b><span>${brl(spent)}</span></div><div class="bar"><i class="${cls}" style="width:${w}%"></i></div><div class="cat-sub ${subcls}">${sub}</div></div></div>`}
+function catRowHtml(c,spent,out,limit){let lim=Number(limit||0),pct=lim?spent/lim:0,cls='',w=0,sub,subcls='';if(lim){cls=pct>=1?'over':pct>=.8?'warn':'ok';subcls=cls==='ok'?'':cls;w=Math.min(100,pct*100);sub=pct>=1?`Estourou ${brl(spent-lim)} · ${Math.round(pct*100)}% de ${brl(lim)}`:`${Math.round(pct*100)}% de ${brl(lim)} · faltam ${brl(lim-spent)}`}else{let share=out?spent/out*100:0;w=Math.min(100,share);sub=`${Math.round(share)}% das saídas · toque para ver e editar os itens`}return `<div class="cat-row" data-cat="${esc(c)}" onclick="openCatDetail(this.dataset.cat)"><div class="icon">${icon(c)}</div><div><div class="cat-top"><b>${esc(c)}</b><span>${brl(spent)}</span></div><div class="bar"><i class="${cls}" style="width:${w}%"></i></div><div class="cat-sub ${subcls}">${sub}</div></div></div>`}
 function renderPlan(){
   let el=document.getElementById('catList');if(!el)return;
   let mk=dashboardMonth,t=monthTotals(mk),ct=monthCatTotals(mk);
   fillMonthStrip('planMonthStrip');
   let names=[...new Set([...Object.keys(ct.cats),...Object.keys(data.limits)])].filter(c=>(ct.cats[c]||0)>0||Number(data.limits[c])>0).sort((a,b)=>(ct.cats[b]||0)-(ct.cats[a]||0));
   let rows=names.map(c=>catRowHtml(c,ct.cats[c]||0,t.out,data.limits[c])).join('');
-  if(ct.base>0)rows+=`<div class="cat-row" style="cursor:default"><div class="icon">🧾</div><div><div class="cat-top"><b>Fatura (valor acumulado)</b><span>${brl(ct.base)}</span></div><div class="cat-sub">Valor base informado nos cartões, sem categoria</div></div></div>`;
+  if(ct.base>0)rows+=`<div class="cat-row" onclick="goCardsMonth()"><div class="icon">🧾</div><div><div class="cat-top"><b>Fatura (valor acumulado)</b><span>${brl(ct.base)}</span></div><div class="cat-sub">Valor base informado nos cartões, sem categoria · toque para editar</div></div></div>`;
   el.innerHTML=rows||`<div class="empty">Sem gastos em ${monthLabel(mk)}.<br>Lance gastos para ver o relatório.</div>`;
   let ms=[];for(let i=5;i>=0;i--)ms.push(monthPlus(mk,-i));
   let rt=ms.map(k=>({k,...monthTotals(k)})),mx=Math.max(1,...rt.map(r=>Math.max(r.inc,r.out))),avg=rt.reduce((a,r)=>a+r.out,0)/rt.length;
@@ -481,21 +490,21 @@ function setMoveQuery(v){moveQuery=normalizeText(v);renderMoves()}
 function setMoveType(t){moveType=t;renderMoves()}
 function renderMoves(){
   let list=document.getElementById('allList');if(!list)return;
-  let mk=dashboardMonth,all=data.transactions.filter(x=>monthKey(x.date||'')===mk);
+  let mk=dashboardMonth,all=moveEntries(mk);
   document.getElementById('moveTitle').textContent=moveType==='expense'?'Gastos':moveType==='income'?'Receitas':'Movimentações';document.getElementById('moveAddBtn').textContent=moveType==='expense'?'+ Novo gasto':moveType==='income'?'+ Nova receita':'+ Novo';
-  let rows=all.filter(x=>moveType==='all'||x.type===moveType).filter(x=>!moveQuery||normalizeText([x.desc,x.category,x.account,String(x.value).replace('.',',')].join(' ')).includes(moveQuery)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id);
+  let rows=all.filter(x=>moveType==='all'||x.type===moveType).filter(x=>!moveQuery||normalizeText([x.desc,x.category,x.account||'',x.meta||'',String(x.value).replace('.',',')].join(' ')).includes(moveQuery)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id);
   document.getElementById('moveTypes').innerHTML=[['all','Todos'],['expense','Saídas'],['income','Entradas']].map(([k,l])=>`<button class="pill${moveType===k?' active':''}" onclick="setMoveType('${k}')">${l}</button>`).join('');
   let inc=rows.filter(x=>x.type==='income').reduce((a,b)=>a+Number(b.value||0),0),exp=rows.filter(x=>x.type==='expense').reduce((a,b)=>a+Number(b.value||0),0);
   document.getElementById('moveTotals').textContent=all.length?`${rows.length} lançamento(s) · Entradas ${brl(inc)} · Saídas ${brl(exp)}`:'';
-  list.innerHTML=rows.map(txHtml).join('')||emptyMoves(mk)
+  list.innerHTML=rows.map(x=>x.kind==='tx'?txHtml(x.tx):entryRow(x,'')).join('')||emptyMoves(mk)
 }
 function emptyMoves(mk){
   if(moveQuery)return `<div class="empty">Nada encontrado para essa busca em ${monthLabel(mk)}.</div>`;
   let what=moveType==='expense'?'gasto':moveType==='income'?'receita':'lançamento',counts={},cur=iso(new Date()).slice(0,7),dist=k=>{let [y1,m1]=k.split('-').map(Number),[y2,m2]=cur.split('-').map(Number);return Math.abs((y1-y2)*12+(m1-m2))};
-  data.transactions.forEach(x=>{if(moveType==='all'||x.type===moveType){let k=monthKey(x.date||'');if(k&&k!==mk)counts[k]=(counts[k]||0)+1}});
+  data.transactions.forEach(x=>{if(moveType==='all'||x.type===moveType){let k=monthKey(x.date||'');if(k&&k!==mk)counts[k]=(counts[k]||0)+1}});if(moveType!=='income')data.cardItems.forEach(x=>{if(x.month&&x.month!==mk)counts[x.month]=(counts[x.month]||0)+1});
   let ks=Object.keys(counts).sort((a,b)=>dist(a)-dist(b)||b.localeCompare(a)).slice(0,4).sort();
   let chips=ks.length?`<div style="margin-top:14px">Você tem ${what}s em:</div><div class="monthstrip" style="justify-content:center;flex-wrap:wrap;margin-top:8px">${ks.map(k=>{let [y,m]=k.split('-').map(Number);return `<button class="pill" onclick="setDashboardMonth('${k}')">${new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','')} (${counts[k]})</button>`}).join('')}</div>`:'';
-  let extra=moveType==='expense'?`<div style="margin-top:12px;font-size:12px">Contas fixas e gastos de cartão ficam nas abas <b>Fixas</b> e <b>Cartões</b>.</div>`:'';
+  let extra='';
   return `<div class="empty"><b>Nenhum ${what} em ${monthLabel(mk)}.</b>${chips}${extra}</div>`
 }
 
@@ -544,6 +553,32 @@ function deleteCategory(type,name){
   if(!inc){data.fixed.forEach(x=>{if(x.category===name)x.category='Outros'});data.cardItems.forEach(x=>{if(x.category===name)x.category='Outros'});delete data.limits[name]}
   data.cats[type]=data.cats[type].filter(c=>c!==name);delete data.catIcons[name];
   save();renderCatManage();showToast('Categoria excluída')
+}
+
+// ===== Lista unificada de saídas (v0.19) =====
+let cdCat=null;
+function moveEntries(mk){
+  let out=[];
+  data.transactions.filter(x=>monthKey(x.date||'')===mk).forEach(x=>out.push({kind:'tx',tx:x,id:x.id,date:x.date||mk+'-01',type:x.type,value:Number(x.value||0),desc:x.desc,category:x.category,account:x.account,meta:''}));
+  data.fixed.filter(x=>x.active!==false).forEach(x=>out.push({kind:'fixed',id:x.id,date:dueDateForMonth(mk,x.day),type:'expense',value:Number(x.value||0),desc:x.desc,category:x.category,meta:'🔁 Conta fixa · dia '+x.day+(isPaid('fixed',x.id,mk)?' · ✓ paga':'')}));
+  data.cardItems.filter(x=>x.month===mk).forEach(x=>{let c=data.cards.find(k=>k.id===x.cardId);out.push({kind:'card',id:x.id,date:x.date||mk+'-01',type:'expense',value:Number(x.value||0),desc:x.desc,category:x.category,meta:'💳 '+(c?c.name:'Cartão')})});
+  data.cards.forEach(c=>{let b=invoiceBase(c.id,mk);if(b>0)out.push({kind:'base',id:c.id,date:dueDateForMonth(mk,c.dueDay),type:'expense',value:b,desc:'Fatura '+c.name+' (valor acumulado)',category:'',meta:'🧾 Valor informado na fatura'})});
+  return out
+}
+function entryRow(e,pre){let d=new Date(e.date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}),ic=e.kind==='base'?'🧾':icon(e.category),sub=[e.category&&e.category!==e.desc?esc(e.category):'',d,e.meta?esc(e.meta):'',e.account?esc(e.account):''].filter(Boolean).join(' · ');return `<div class="tx" style="grid-template-columns:46px 1fr auto" onclick="${pre}editEntry('${e.kind}',${e.id})"><div class="icon">${ic}</div><div><div class="name">${esc(e.desc)}</div><div class="meta">${sub}</div></div><div class="amount ${e.type}">${e.type==='expense'?'−':'+'} ${brl(e.value)}</div></div>`}
+function editEntry(kind,id){
+  if(kind==='tx')return openEditTransaction(id);
+  if(kind==='fixed')return openFixed(id);
+  if(kind==='card')return openEditCardItem(id);
+  if(kind==='base'){currentCardId=id;currentInvoiceMonth=dashboardMonth;return openInvoiceBase()}
+}
+function goCardsMonth(){setInvoiceMonth(dashboardMonth);go('cards')}
+function openCatDetail(cat){
+  cdCat=cat;let mk=dashboardMonth,items=moveEntries(mk).filter(e=>e.type==='expense'&&e.category===cat).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id),spent=items.reduce((a,e)=>a+e.value,0),lim=Number(data.limits[cat]||0);
+  document.getElementById('cdTitle').textContent=`${icon(cat)} ${cat} · ${monthLabel(mk)}`;
+  document.getElementById('cdInfo').textContent=`Total ${brl(spent)}${lim?` de um limite de ${brl(lim)}`:''} · ${items.length} item(ns). Toque em um item para editar (valor, categoria…).`;
+  document.getElementById('cdList').innerHTML=items.map(e=>entryRow(e,'closeSheets();')).join('')||'<div class="empty">Nenhum item nesta categoria neste mês.</div>';
+  document.getElementById('catDetailOverlay').classList.add('show')
 }
 function openVoice(){voiceDraft=null;document.getElementById('voiceSave').style.display='none';document.getElementById('transcript').textContent='Ex.: “Gastei 87 reais no supermercado” ou “quanto gastei este mês?”';document.getElementById('voiceStatus').textContent='Toque e fale um lançamento ou uma pergunta.';document.getElementById('voiceOverlay').classList.add('show')}
 function applyVoiceText(t){let btn=document.getElementById('micBtn');btn.classList.remove('listening');document.getElementById('transcript').textContent=t;if(isFinancialQuestion(t)){let answer=financialAnswer(t);voiceDraft=null;document.getElementById('voiceSave').style.display='none';if(answer){document.getElementById('voiceStatus').textContent=answer;document.getElementById('transcript').textContent=`Você: ${t}\n\nMeu Dinheiro: ${answer}`;speakText(answer)}else document.getElementById('voiceStatus').textContent='Ainda não consegui responder essa pergunta.';return}voiceDraft=parseVoice(t);document.getElementById('voiceStatus').textContent=voiceDraft?`Entendi: ${voiceDraft.type==='income'?'entrada':'saída'} de ${brl(voiceDraft.value)}.`:'Não consegui entender. Tente fazer um lançamento ou uma pergunta sobre seus gastos.';document.getElementById('voiceSave').style.display=voiceDraft?'block':'none'}
