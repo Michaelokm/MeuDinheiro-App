@@ -48,6 +48,8 @@
     .goal-actions{display:flex;gap:6px;margin-top:10px}.goal-actions button{flex:1;border:1px solid var(--line);background:#202735;color:#dfe7f1;border-radius:11px;padding:8px;font-size:12px;font-weight:700}.goal-actions .idel-b{flex:0 0 42px;color:#ff8d96}
     .alertbox{display:none;margin:0 0 14px;padding:12px 14px;border-radius:16px;background:#2b2314;border:1px solid #5a4620;color:#f3d08a;font-size:13px;line-height:1.4;cursor:pointer}.alertbox.show{display:block}
     .search{width:100%;padding:12px 14px;border-radius:14px;border:1px solid #2a3340;background:#11161e;color:#fff;outline:none;margin:12px 0 8px}
+    .cm-row{display:grid;grid-template-columns:36px 1fr 38px 38px;gap:8px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line)}.cm-row:last-child{border-bottom:0}.cm-ico{font-size:22px;text-align:center}.cm-n{font-size:11px;color:var(--muted);margin-top:2px}.cm-row button{width:38px;height:36px;border-radius:10px;border:1px solid var(--line);background:#202735;color:#dfe7f1}
+    .emoji-row{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}.emoji-row button{width:40px;height:40px;border-radius:11px;border:1px solid var(--line);background:#1c222e;font-size:19px}
   </style>
 </head>
 <body>
@@ -144,13 +146,14 @@
     <div class="section" style="margin-top:8px"><h2>Configurações</h2></div>
     <div class="card settings-card">
       <button onclick="requestNotifications()">🔔 Ativar notificações de vencimento</button>
+      <button onclick="openCatManage('expense')">🏷️ Categorias (criar, editar, excluir)</button>
       <button onclick="exportData()">📤 Exportar backup completo</button>
       <button onclick="importBackup()">📥 Importar backup</button>
       <button onclick="seedDemo()">✨ Carregar exemplo</button>
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.15 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites e metas.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.16 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="openAdd('expense')">＋</button>
@@ -169,7 +172,7 @@
   <div class="type"><button id="typeExpense" class="active" onclick="setType('expense')">Saída</button><button id="typeIncome" onclick="setType('income')">Entrada</button></div>
   <div class="money-input"><span>R$</span><input id="value" inputmode="decimal" placeholder="0,00" /></div>
   <div class="field"><label>Descrição</label><input id="desc" placeholder="Ex.: Supermercado" /></div>
-  <div class="row2"><div class="field"><label>Categoria</label><select id="category"></select></div><div class="field"><label>Data</label><input id="date" type="date" /></div></div>
+  <div class="row2"><div class="field"><label>Categoria</label><select id="category" onchange="catSelectChanged(this,currentType)"></select></div><div class="field"><label>Data</label><input id="date" type="date" /></div></div>
   <div class="field"><label>Forma / conta</label><select id="account"><option>Pix</option><option>Débito</option><option>Crédito</option><option>Dinheiro</option><option>Conta bancária</option></select></div>
   <div class="toggle" id="recurringRow"><div><b>Repetir todo mês</b><div style="font-size:12px;color:var(--muted);margin-top:3px">Cria uma conta fixa mensal</div></div><button class="switch" id="recurringSwitch" onclick="toggleRecurring()"></button></div>
   <button class="save" id="transactionSaveButton" onclick="saveTransaction()">Salvar lançamento</button>
@@ -181,7 +184,7 @@
   <div class="handle"></div><h3>Nova conta fixa</h3>
   <div class="money-input"><span>R$</span><input id="fValue" inputmode="decimal" placeholder="0,00" /></div>
   <div class="field"><label>Nome da conta</label><input id="fDesc" placeholder="Ex.: Financiamento do carro" /></div>
-  <div class="row2"><div class="field"><label>Categoria</label><select id="fCategory"></select></div><div class="field"><label>Vencimento</label><input id="fDay" type="number" min="1" max="31" placeholder="10" /></div></div>
+  <div class="row2"><div class="field"><label>Categoria</label><select id="fCategory" onchange="catSelectChanged(this,'expense')"></select></div><div class="field"><label>Vencimento</label><input id="fDay" type="number" min="1" max="31" placeholder="10" /></div></div>
   <button class="save" onclick="saveFixed()">Salvar conta fixa</button><button class="ghost" onclick="closeSheets()">Cancelar</button>
 </div></div>
 
@@ -205,7 +208,7 @@
   <div class="handle"></div><h3>Acrescentar gasto na fatura</h3>
   <div class="money-input"><span>R$</span><input id="ciValue" inputmode="decimal" placeholder="0,00" /></div>
   <div class="field"><label>Descrição</label><input id="ciDesc" placeholder="Ex.: Combustível" /></div>
-  <div class="row2"><div class="field"><label>Categoria</label><select id="ciCategory"></select></div><div class="field"><label>Data</label><input id="ciDate" type="date" /></div></div>
+  <div class="row2"><div class="field"><label>Categoria</label><select id="ciCategory" onchange="catSelectChanged(this,'expense')"></select></div><div class="field"><label>Data</label><input id="ciDate" type="date" /></div></div>
   <div class="field"><label>Parcelas</label><input id="ciInstallments" type="number" min="1" max="48" value="1" inputmode="numeric" /></div>
   <p class="mini-note">À vista: deixe 1. Parcelado: informe o valor TOTAL acima, ele é dividido entre as próximas faturas.</p>
   <button class="save" onclick="saveCardItem()">Adicionar à fatura</button><button class="ghost" onclick="closeSheets()">Cancelar</button>
@@ -241,19 +244,35 @@
   <button class="save" onclick="saveGoalMove()">Confirmar</button><button class="ghost" onclick="closeSheets()">Cancelar</button>
 </div></div>
 
+<div class="overlay" id="catManageOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
+  <div class="handle"></div><h3>Categorias</h3>
+  <div class="type"><button id="cmExp" onclick="openCatManage('expense')">Saídas</button><button id="cmInc" onclick="openCatManage('income')">Entradas</button></div>
+  <button class="save" style="margin-top:0" onclick="openCatEdit(catManageType,null)">＋ Nova categoria</button>
+  <div id="cmList" style="margin:6px 0 10px"></div>
+  <button class="ghost" onclick="closeSheets()">Fechar</button>
+</div></div>
+
+<div class="overlay" id="catEditOverlay" onclick="if(event.target===this)closeCatEdit()"><div class="sheet">
+  <div class="handle"></div><h3 id="ceTitle">Nova categoria</h3>
+  <div class="field"><label>Nome</label><input id="ceName" maxlength="24" placeholder="Ex.: Faculdade" /></div>
+  <div class="field"><label>Ícone (opcional)</label><input id="ceIcon" maxlength="8" placeholder="🏷️" /></div>
+  <div class="emoji-row" id="ceEmojis"></div>
+  <button class="save" onclick="saveCatEdit()">Salvar categoria</button><button class="ghost" onclick="closeCatEdit()">Cancelar</button>
+</div></div>
+
 <div class="toast" id="toast"></div>
 <script>
-const CATS_EXP=['Alimentação','Moradia','Transporte','Carro','Moto','Pensão','Seguros','Saúde','Lazer','Compras','Contas','Outros'];
+const CATS_EXP=['Alimentação','Moradia','Transporte','Carro','Moto','Pensão','Seguros','Saúde','Educação','Lazer','Compras','Contas','Outros'];
 const CATS_INC=['Salário','Freelance','Reembolso','Venda','Rendimento','Outros'];
 let data=JSON.parse(localStorage.getItem('md_data')||'{"transactions":[],"fixed":[],"cards":[],"cardInvoices":[],"cardItems":[],"payments":[],"limits":{},"goals":[]}');
-if(!Array.isArray(data.transactions))data.transactions=[];if(!Array.isArray(data.fixed))data.fixed=[];if(!Array.isArray(data.cards))data.cards=[];if(!Array.isArray(data.cardInvoices))data.cardInvoices=[];if(!Array.isArray(data.cardItems))data.cardItems=[];if(!Array.isArray(data.payments))data.payments=[];if(!data.limits||typeof data.limits!=='object'||Array.isArray(data.limits))data.limits={};if(!Array.isArray(data.goals))data.goals=[];
+if(!Array.isArray(data.transactions))data.transactions=[];if(!Array.isArray(data.fixed))data.fixed=[];if(!Array.isArray(data.cards))data.cards=[];if(!Array.isArray(data.cardInvoices))data.cardInvoices=[];if(!Array.isArray(data.cardItems))data.cardItems=[];if(!Array.isArray(data.payments))data.payments=[];if(!data.limits||typeof data.limits!=='object'||Array.isArray(data.limits))data.limits={};if(!Array.isArray(data.goals))data.goals=[];ensureCatsOn(data);
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
 const brl=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const parseMoney=s=>{s=(s||'').toString().trim().replace(/R\$/gi,'').replace(/\s/g,'');if(!s)return 0;if(s.includes(',')){s=s.replace(/\./g,'').replace(',','.')}else if(/^\d{1,3}(\.\d{3})+$/.test(s)){s=s.replace(/\./g,'')}return Number(s)||0};
 let currentType='expense', recurring=false, editingTransactionId=null, voiceDraft=null, currentCardId=null, currentInvoiceMonth=iso(new Date()).slice(0,7), dashboardMonth=localStorage.getItem('md_dashboard_month')||iso(new Date()).slice(0,7);
 function save(){localStorage.setItem('md_data',JSON.stringify(data));render();syncNativeReminders()}
 function showToast(t){let e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800)}
-function cats(type,el){el.innerHTML=(type==='income'?CATS_INC:CATS_EXP).map(c=>`<option>${c}</option>`).join('')}
+function cats(type,el){let list=(data.cats&&data.cats[type==='income'?'income':'expense'])||(type==='income'?CATS_INC:CATS_EXP);el.innerHTML=list.map(c=>`<option>${esc(c)}</option>`).join('')+'<option value="__new__">➕ Nova categoria…</option>';el.dataset.prev=el.value}
 function setType(t){currentType=t;document.getElementById('typeExpense').classList.toggle('active',t==='expense');document.getElementById('typeIncome').classList.toggle('active',t==='income');cats(t,document.getElementById('category'));if(editingTransactionId===null){document.getElementById('recurringRow').style.display=t==='expense'?'flex':'none';if(t!=='expense'){recurring=false;document.getElementById('recurringSwitch').classList.remove('on')}}}
 function toggleRecurring(){recurring=!recurring;document.getElementById('recurringSwitch').classList.toggle('on',recurring)}
 function openAdd(t='expense'){editingTransactionId=null;currentType=t;recurring=false;setType(t);document.getElementById('transactionTitle').textContent='Novo lançamento';document.getElementById('transactionSaveButton').textContent='Salvar lançamento';document.getElementById('transactionDeleteButton').style.display='none';document.getElementById('recurringRow').style.display=t==='expense'?'flex':'none';document.getElementById('recurringSwitch').classList.remove('on');document.getElementById('value').value='';document.getElementById('desc').value='';document.getElementById('date').value=iso(new Date());document.getElementById('account').value='Pix';document.getElementById('addOverlay').classList.add('show')}
@@ -376,7 +395,7 @@ function monthLabel(k){let [y,m]=k.split('-').map(Number);return new Date(y,m-1,
 function renderCards(){let empty=document.getElementById('cardsEmpty'),content=document.getElementById('cardsContent');if(!empty||!content)return;if(!data.cards.length){empty.style.display='block';content.style.display='none';return}empty.style.display='none';content.style.display='block';if(!currentCardId||!data.cards.some(c=>c.id===currentCardId))currentCardId=data.cards[0].id;let c=selectedCard();document.getElementById('cardTabs').innerHTML=data.cards.map(x=>`<button class="card-chip${x.id===c.id?' active':''}" onclick="setCard(${x.id})">💳 ${esc(x.name)}</button>`).join('');document.getElementById('selectedCardName').textContent=c.name;document.getElementById('selectedCardMeta').textContent=`Vence dia ${c.dueDay}`;let total=invoiceTotalFor(c.id,currentInvoiceMonth),paid=isPaid('card',c.id,currentInvoiceMonth);document.getElementById('invoiceMonthLabel').textContent=`Fatura de ${monthLabel(currentInvoiceMonth)}`;document.getElementById('invoiceTotal').textContent=brl(total);document.getElementById('invoiceLimitInfo').textContent='Edite o valor atual ou acrescente novas compras abaixo.';document.getElementById('invoiceStatus').textContent=paid?`✓ ${paidLabel('card',c.id,currentInvoiceMonth)}`:`Pendente · vence dia ${c.dueDay}`;document.getElementById('invoiceStatus').classList.toggle('paid-sub',paid);let payBtn=document.getElementById('invoicePaidBtn');payBtn.textContent=paid?'↩ Desmarcar como paga':'✓ Marcar fatura como paga';payBtn.classList.toggle('paid-btn',paid);buildInvoiceMonths();let base=invoiceBase(c.id,currentInvoiceMonth),items=[...invoiceItems(c.id,currentInvoiceMonth)].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id),rows='';if(base>0)rows+=`<div class="invoice-item"><div class="ii">🧾</div><div><div class="ititle">Valor já acumulado</div><div class="isub">Base informada para esta fatura</div></div><b>${brl(base)}</b><span></span></div>`;rows+=items.map(x=>`<div class="invoice-item"><div class="ii">${icon(x.category)}</div><div><div class="ititle">${esc(x.desc)}</div><div class="isub">${esc(x.category)} · ${new Date((x.date||iso(new Date()))+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</div></div><b>${brl(x.value)}</b><button class="idel" onclick="deleteCardItem(${x.id})">×</button></div>`).join('');document.getElementById('invoiceList').innerHTML=rows||'<div class="empty">Nenhum valor nesta fatura ainda.<br>Defina o valor atual ou acrescente um gasto.</div>'}
 function deleteFixed(id){if(confirm('Remover esta conta fixa?')){data.fixed=data.fixed.filter(x=>x.id!==id);save()}}
 function monthKey(d){return d.slice(0,7)}
-function icon(cat){let m={'Alimentação':'🛒','Moradia':'🏠','Transporte':'🚕','Carro':'🚗','Moto':'🏍️','Pensão':'👤','Seguros':'🛡️','Saúde':'❤️','Lazer':'🎬','Compras':'🛍️','Contas':'🧾','Salário':'💼','Freelance':'💻','Reembolso':'↩️','Venda':'🏷️','Rendimento':'📈'};return m[cat]||'•'}
+function icon(cat){let m={'Alimentação':'🛒','Moradia':'🏠','Transporte':'🚕','Carro':'🚗','Moto':'🏍️','Pensão':'👤','Seguros':'🛡️','Saúde':'❤️','Educação':'🎓','Lazer':'🎬','Compras':'🛍️','Contas':'🧾','Salário':'💼','Freelance':'💻','Reembolso':'↩️','Venda':'🏷️','Rendimento':'📈'};return (data.catIcons&&data.catIcons[cat])||m[cat]||'•'}
 function txHtml(x){let d=new Date(x.date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});return `<div class="tx" onclick="openEditTransaction(${x.id})" title="Toque para editar"><div class="icon">${icon(x.category)}</div><div><div class="name">${esc(x.desc)}</div><div class="meta">${esc(x.category)} · ${d}${x.account?' · '+esc(x.account):''} · toque para editar</div></div><div class="amount ${x.type}">${x.type==='expense'?'−':'+'} ${brl(x.value)}</div><button class="tdel" onclick="event.stopPropagation();deleteTransaction(${x.id})" aria-label="Excluir lançamento">🗑</button></div>`}
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function setDashboardMonth(m){dashboardMonth=m;localStorage.setItem('md_dashboard_month',m);render()}
@@ -396,7 +415,7 @@ function buildMonths(){let el=document.getElementById('monthStrip');if(!el)retur
 function go(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(p).classList.add('active');document.querySelectorAll('.nav[data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===p));document.getElementById('fab').style.display=['home','moves'].includes(p)?'block':'none';window.scrollTo(0,0)}
 function normalizeText(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\s-]/g,' ').replace(/\s+/g,' ').trim()}
 function resolveQuestionMonth(s){let n=normalizeText(s),cur=iso(new Date()).slice(0,7);if(/mes passado|mes anterior|ultimo mes/.test(n))return monthPlus(cur,-1);if(/proximo mes|mes que vem/.test(n))return monthPlus(cur,1);if(/\b(este|esse|neste|nesse) mes|mes atual/.test(n))return cur;let names=['janeiro','fevereiro','marco','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'],now=new Date(),year=(n.match(/\b(20\d{2})\b/)||[])[1];let idx=names.findIndex(x=>n.includes(x));if(idx<0)return dashboardMonth||iso(now).slice(0,7);return `${year||now.getFullYear()}-${String(idx+1).padStart(2,'0')}`}
-function categoryFromQuestion(s){let n=normalizeText(s),tests=[['Alimentação',/alimentacao|mercado|supermercado|restaurante|lanche|comida|padaria/],['Carro',/carro|combustivel|gasolina|diesel|oficina/],['Moto',/moto/],['Pensão',/pensao/],['Seguros',/seguro/],['Moradia',/aluguel|condominio|casa|moradia/],['Contas',/luz|energia|agua|internet|telefone|conta/],['Saúde',/farmacia|medico|saude/],['Lazer',/cinema|bar|lazer|viagem/],['Compras',/compra|roupa|shopping/],['Transporte',/uber|taxi|onibus|transporte/]];for(let [c,re] of tests)if(re.test(n))return c;return null}
+function categoryFromQuestion(s){let n=normalizeText(s),tests=[['Alimentação',/alimentacao|mercado|supermercado|restaurante|lanche|comida|padaria/],['Carro',/carro|combustivel|gasolina|diesel|oficina/],['Moto',/moto/],['Pensão',/pensao/],['Seguros',/seguro/],['Moradia',/aluguel|condominio|casa|moradia/],['Contas',/luz|energia|agua|internet|telefone|conta/],['Saúde',/farmacia|medico|saude/],['Lazer',/cinema|bar|lazer|viagem/],['Compras',/compra|roupa|shopping/],['Transporte',/uber|taxi|onibus|transporte/]];for(let c of (data.cats.expense||[]).filter(c=>!CATS_EXP.includes(c)&&normalizeText(c).length>=3)){if(new RegExp('\\b'+normalizeText(c).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b').test(n))return c}for(let [c,re] of tests)if(re.test(n))return c;return null}
 function speakText(t){try{if(window.AndroidVoice&&typeof window.AndroidVoice.speak==='function'){window.AndroidVoice.speak(t);return}if('speechSynthesis' in window){window.speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.lang='pt-BR';u.rate=1;window.speechSynthesis.speak(u)}}catch(e){}}
 function isFinancialQuestion(t){let n=normalizeText(t);return /\bquanto\b/.test(n)||/\bqual\b.*\bsaldo\b/.test(n)||/o que (eu )?(gastei|paguei|recebi)/.test(n)||/como (esta|ta).*\b(saldo|fatura|gasto)/.test(n)||/me (fala|diz|mostra).*(gastei|gastos|fatura|saldo|recebi|entrou)/.test(n)}
 function financialAnswer(t){let n=normalizeText(t),mk=resolveQuestionMonth(t),label=monthLabel(mk),tx=data.transactions.filter(x=>monthKey(x.date||'')===mk),expenses=tx.filter(x=>x.type==='expense'),income=tx.filter(x=>x.type==='income'),exp=expenses.reduce((a,b)=>a+Number(b.value||0),0),inc=income.reduce((a,b)=>a+Number(b.value||0),0),fixed=data.fixed.filter(x=>x.active!==false).reduce((a,b)=>a+Number(b.value||0),0),cardsTotal=data.cards.reduce((sum,c)=>sum+invoiceTotalFor(c.id,mk),0),cat=categoryFromQuestion(t);
@@ -459,13 +478,60 @@ function renderMoves(){
   document.getElementById('moveTotals').textContent=all.length?`${rows.length} lançamento(s) · Entradas ${brl(inc)} · Saídas ${brl(exp)}`:'';
   list.innerHTML=rows.map(txHtml).join('')||(all.length?`<div class="empty">Nada encontrado com esse filtro.</div>`:`<div class="empty">Nenhum lançamento em ${monthLabel(mk)}.</div>`)
 }
+
+// ===== Categorias personalizadas (v0.16) =====
+let catCtx=null,catManageType='expense';
+function ensureCatsOn(d){
+  if(!d.cats||typeof d.cats!=='object'||Array.isArray(d.cats))d.cats={};
+  if(!Array.isArray(d.cats.expense)||!d.cats.expense.length)d.cats.expense=[...CATS_EXP];
+  if(!Array.isArray(d.cats.income)||!d.cats.income.length)d.cats.income=[...CATS_INC];
+  if(!d.catIcons||typeof d.catIcons!=='object'||Array.isArray(d.catIcons))d.catIcons={};
+  let add=(t,c)=>{c=c||'Outros';let l=d.cats[t];if(!l.includes(c)){let i=l.indexOf('Outros');l.splice(i>=0?i:l.length,0,c)}};
+  (d.transactions||[]).forEach(x=>add(x.type==='income'?'income':'expense',x.category));
+  (d.fixed||[]).forEach(x=>add('expense',x.category));
+  (d.cardItems||[]).forEach(x=>add('expense',x.category));
+  add('expense','Outros');add('income','Outros')
+}
+function catUsage(type,name){let inc=type==='income',n=data.transactions.filter(x=>(x.type==='income')===inc&&x.category===name).length;if(!inc)n+=data.fixed.filter(x=>x.category===name).length+data.cardItems.filter(x=>x.category===name).length;return n}
+function catSelectChanged(sel,type){if(sel.value!=='__new__'){sel.dataset.prev=sel.value;return}sel.value=sel.dataset.prev||(sel.options[0]?sel.options[0].value:'');openCatEdit(type,null,sel.id)}
+function openCatManage(type){catManageType=type||'expense';renderCatManage();document.getElementById('catManageOverlay').classList.add('show')}
+function renderCatManage(){let t=catManageType;document.getElementById('cmExp').classList.toggle('active',t==='expense');document.getElementById('cmInc').classList.toggle('active',t==='income');document.getElementById('cmList').innerHTML=data.cats[t].map(c=>{let n=catUsage(t,c);return `<div class="cm-row"><span class="cm-ico">${icon(c)}</span><div><b>${esc(c)}</b><div class="cm-n">${n} em uso</div></div><button data-cat="${esc(c)}" onclick="openCatEdit(catManageType,this.dataset.cat)">✏️</button>${c==='Outros'?'<span></span>':`<button data-cat="${esc(c)}" onclick="deleteCategory(catManageType,this.dataset.cat)">🗑</button>`}</div>`}).join('')}
+function openCatEdit(type,old,selectId){catCtx={type,old:old||null,selectId:selectId||null};document.getElementById('ceTitle').textContent=old?'Editar categoria':'Nova categoria';document.getElementById('ceName').value=old||'';let ic=old?icon(old):'';document.getElementById('ceIcon').value=ic==='•'?'':ic;document.getElementById('ceEmojis').innerHTML=['🎓','📚','🏥','🐶','🎁','✈️','🏋️','📱','🔧','💡','👶','☕','🍔','🎮','💇','🚌'].map(e=>`<button onclick="document.getElementById('ceIcon').value=this.textContent">${e}</button>`).join('');document.getElementById('catEditOverlay').classList.add('show');setTimeout(()=>document.getElementById('ceName').focus(),60)}
+function closeCatEdit(){document.getElementById('catEditOverlay').classList.remove('show');catCtx=null}
+function saveCatEdit(){
+  if(!catCtx)return;
+  let {type,old,selectId}=catCtx,name=document.getElementById('ceName').value.trim().replace(/\s+/g,' '),ico=document.getElementById('ceIcon').value.trim(),list=data.cats[type],inc=type==='income';
+  if(!name)return showToast('Informe o nome');
+  if(list.some(c=>c.toLowerCase()===name.toLowerCase()&&c!==old))return showToast('Já existe uma categoria com esse nome');
+  if(old&&old!==name){
+    if(old==='Outros')return showToast('"Outros" não pode ser renomeada');
+    list[list.indexOf(old)]=name;
+    data.transactions.forEach(x=>{if((x.type==='income')===inc&&x.category===old)x.category=name});
+    if(!inc){data.fixed.forEach(x=>{if(x.category===old)x.category=name});data.cardItems.forEach(x=>{if(x.category===old)x.category=name});if(data.limits[old]!=null){data.limits[name]=data.limits[old];delete data.limits[old]}}
+    if(data.catIcons[old]!=null){data.catIcons[name]=data.catIcons[old];delete data.catIcons[old]}
+  }else if(!old){let i=list.indexOf('Outros');if(i>=0)list.splice(i,0,name);else list.push(name)}
+  if(ico)data.catIcons[name]=ico;else delete data.catIcons[name];
+  save();closeCatEdit();
+  if(selectId){let sel=document.getElementById(selectId);if(sel){cats(type,sel);sel.value=name;sel.dataset.prev=name}}
+  if(document.getElementById('catManageOverlay').classList.contains('show'))renderCatManage();
+  showToast(old?'Categoria atualizada':'Categoria criada')
+}
+function deleteCategory(type,name){
+  if(name==='Outros')return;
+  let n=catUsage(type,name),inc=type==='income';
+  if(!confirm(n?`"${name}" está em uso (${n}). Esses itens passarão para "Outros". Excluir mesmo assim?`:`Excluir a categoria "${name}"?`))return;
+  data.transactions.forEach(x=>{if((x.type==='income')===inc&&x.category===name)x.category='Outros'});
+  if(!inc){data.fixed.forEach(x=>{if(x.category===name)x.category='Outros'});data.cardItems.forEach(x=>{if(x.category===name)x.category='Outros'});delete data.limits[name]}
+  data.cats[type]=data.cats[type].filter(c=>c!==name);delete data.catIcons[name];
+  save();renderCatManage();showToast('Categoria excluída')
+}
 function openVoice(){voiceDraft=null;document.getElementById('voiceSave').style.display='none';document.getElementById('transcript').textContent='Ex.: “Gastei 87 reais no supermercado” ou “quanto gastei este mês?”';document.getElementById('voiceStatus').textContent='Toque e fale um lançamento ou uma pergunta.';document.getElementById('voiceOverlay').classList.add('show')}
 function applyVoiceText(t){let btn=document.getElementById('micBtn');btn.classList.remove('listening');document.getElementById('transcript').textContent=t;if(isFinancialQuestion(t)){let answer=financialAnswer(t);voiceDraft=null;document.getElementById('voiceSave').style.display='none';if(answer){document.getElementById('voiceStatus').textContent=answer;document.getElementById('transcript').textContent=`Você: ${t}\n\nMeu Dinheiro: ${answer}`;speakText(answer)}else document.getElementById('voiceStatus').textContent='Ainda não consegui responder essa pergunta.';return}voiceDraft=parseVoice(t);document.getElementById('voiceStatus').textContent=voiceDraft?`Entendi: ${voiceDraft.type==='income'?'entrada':'saída'} de ${brl(voiceDraft.value)}.`:'Não consegui entender. Tente fazer um lançamento ou uma pergunta sobre seus gastos.';document.getElementById('voiceSave').style.display=voiceDraft?'block':'none'}
 window.onNativeVoiceResult=t=>applyVoiceText(t);
 window.onNativeVoiceError=msg=>{document.getElementById('micBtn').classList.remove('listening');document.getElementById('voiceStatus').textContent=msg||'Não consegui ouvir. Tente novamente.'};
 function startVoice(){let btn=document.getElementById('micBtn');btn.classList.add('listening');document.getElementById('voiceStatus').textContent='Ouvindo...';if(window.AndroidVoice&&typeof window.AndroidVoice.startListening==='function'){window.AndroidVoice.startListening();return}let SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){btn.classList.remove('listening');document.getElementById('voiceStatus').textContent='Reconhecimento de voz não disponível neste aparelho.';document.getElementById('transcript').innerHTML='<input id="voiceText" style="width:100%;background:transparent;border:0;outline:0;color:white" placeholder="Digite um lançamento ou uma pergunta">';document.getElementById('voiceSave').style.display='block';voiceDraft={manual:true};return}let r=new SR();r.lang='pt-BR';r.interimResults=false;r.maxAlternatives=1;r.onresult=e=>applyVoiceText(e.results[0][0].transcript);r.onerror=()=>window.onNativeVoiceError('Não consegui ouvir. Tente novamente.');r.onend=()=>btn.classList.remove('listening');r.start()}
 function wordsToNumber(t){let map={um:1,uma:1,dois:2,duas:2,tres:3,três:3,quatro:4,cinco:5,seis:6,sete:7,oito:8,nove:9,dez:10,vinte:20,trinta:30,quarenta:40,cinquenta:50,cem:100,cento:100,mil:1000};let parts=t.toLowerCase().split(/\s+/),sum=0,cur=0,used=false;for(let p of parts){if(map[p]!=null){used=true;if(map[p]===1000){cur=Math.max(1,cur)*1000;sum+=cur;cur=0}else cur+=map[p]}}return used?sum+cur:0}
-function parseVoice(t){let s=t.toLowerCase().replace(/reais|real/g,'').trim(),sv=s.replace(/\b(vence\s+)?dia\s*\d{1,2}\b/g,' '),expVerb=/(gastei|paguei|comprei|\bpago\b|gasto|despesa|conta fixa)/.test(s),type=(!expVerb&&/(recebi|entrou|ganhei|sal[aá]rio|entrada)/.test(s))?'income':'expense';let recurring=/(fixa|fixo|todo m[eê]s|mensal)/.test(s);let m=sv.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)(?:\s*mil)?/i),value=0;if(m){value=parseMoney(m[1]);if(/mil/.test(sv.slice(m.index,m.index+m[0].length+5))&&value<10000)value*=1000}else value=wordsToNumber(sv);if(!value)return null;let cat='Outros';let tests=[['Alimentação',/mercado|supermercado|restaurante|lanche|comida|padaria/],['Carro',/carro|combust[ií]vel|gasolina|diesel|oficina/],['Moto',/moto/],['Pensão',/pens[aã]o/],['Seguros',/seguro/],['Moradia',/aluguel|condom[ií]nio|casa/],['Contas',/luz|energia|[aá]gua|internet|telefone/],['Saúde',/farm[aá]cia|m[eé]dico|sa[uú]de/],['Lazer',/cinema|\bbar\b|lazer|viagem/],['Transporte',/uber|t[aá]xi|[oô]nibus|passagem/],['Compras',/roupa|shopping|loja/],['Salário',/sal[aá]rio/]];for(let [c,re] of tests)if(re.test(s)){cat=c;break}if(type==='income'&&!CATS_INC.includes(cat))cat=/sal[aá]rio/.test(s)?'Salário':'Outros';let day=(s.match(/(?:dia|vence dia)\s*(\d{1,2})/)||[])[1];let when=new Date();if(/anteontem/.test(s))when.setDate(when.getDate()-2);else if(/ontem/.test(s))when.setDate(when.getDate()-1);let desc=sv.replace(/\b(gastei|paguei|comprei|recebi|ganhei|entrou|reais|real|hoje|anteontem|ontem|no pix|no cr[eé]dito|no d[eé]bito|todo m[eê]s|conta fixa|fixa|fixo|vence|vencimento)\b/g,' ').replace(/\d+[.,]?\d*(\s*mil\b)?/g,' ').replace(/\s+/g,' ').trim();desc=desc.replace(/^((de|do|da|dos|das|em|no|na|com|para|pra)\s+)+/,'').replace(/[\s,.;:-]+$/,'');if(!desc)desc=cat;let account=/pix/.test(s)?'Pix':/cr[eé]dito/.test(s)?'Crédito':/d[eé]bito/.test(s)?'Débito':/(em|no) dinheiro|dinheiro vivo/.test(s)?'Dinheiro':'Conta bancária';return{type,value,desc:desc.charAt(0).toUpperCase()+desc.slice(1),category:cat,date:iso(when),account,recurring,day:Number(day)||new Date().getDate()}}
+function parseVoice(t){let s=t.toLowerCase().replace(/reais|real/g,'').trim(),sv=s.replace(/\b(vence\s+)?dia\s*\d{1,2}\b/g,' '),expVerb=/(gastei|paguei|comprei|\bpago\b|gasto|despesa|conta fixa)/.test(s),type=(!expVerb&&/(recebi|entrou|ganhei|sal[aá]rio|entrada)/.test(s))?'income':'expense';let recurring=/(fixa|fixo|todo m[eê]s|mensal)/.test(s);let m=sv.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)(?:\s*mil)?/i),value=0;if(m){value=parseMoney(m[1]);if(/mil/.test(sv.slice(m.index,m.index+m[0].length+5))&&value<10000)value*=1000}else value=wordsToNumber(sv);if(!value)return null;let cat='Outros';let extraCats=(data.cats[type==='income'?'income':'expense']||[]).filter(c=>!CATS_EXP.includes(c)&&!CATS_INC.includes(c)&&normalizeText(c).length>=3),ntext=normalizeText(s);for(let c of extraCats){if(new RegExp('\\b'+normalizeText(c).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b').test(ntext)){cat=c;break}}let tests=[['Alimentação',/mercado|supermercado|restaurante|lanche|comida|padaria/],['Carro',/carro|combust[ií]vel|gasolina|diesel|oficina/],['Moto',/moto/],['Pensão',/pens[aã]o/],['Seguros',/seguro/],['Moradia',/aluguel|condom[ií]nio|casa/],['Contas',/luz|energia|[aá]gua|internet|telefone/],['Saúde',/farm[aá]cia|m[eé]dico|sa[uú]de/],['Lazer',/cinema|\bbar\b|lazer|viagem/],['Transporte',/uber|t[aá]xi|[oô]nibus|passagem/],['Compras',/roupa|shopping|loja/],['Salário',/sal[aá]rio/]];if(cat==='Outros')for(let [c,re] of tests)if(re.test(s)){cat=c;break}if(type==='income'){if(!data.cats.income.includes(cat))cat=(/sal[aá]rio/.test(s)&&data.cats.income.includes('Salário'))?'Salário':'Outros'}else if(!data.cats.expense.includes(cat))cat='Outros';let day=(s.match(/(?:dia|vence dia)\s*(\d{1,2})/)||[])[1];let when=new Date();if(/anteontem/.test(s))when.setDate(when.getDate()-2);else if(/ontem/.test(s))when.setDate(when.getDate()-1);let desc=sv.replace(/\b(gastei|paguei|comprei|recebi|ganhei|entrou|reais|real|hoje|anteontem|ontem|no pix|no cr[eé]dito|no d[eé]bito|todo m[eê]s|conta fixa|fixa|fixo|vence|vencimento)\b/g,' ').replace(/\d+[.,]?\d*(\s*mil\b)?/g,' ').replace(/\s+/g,' ').trim();desc=desc.replace(/^((de|do|da|dos|das|em|no|na|com|para|pra)\s+)+/,'').replace(/[\s,.;:-]+$/,'');if(!desc)desc=cat;let account=/pix/.test(s)?'Pix':/cr[eé]dito/.test(s)?'Crédito':/d[eé]bito/.test(s)?'Débito':/(em|no) dinheiro|dinheiro vivo/.test(s)?'Dinheiro':'Conta bancária';return{type,value,desc:desc.charAt(0).toUpperCase()+desc.slice(1),category:cat,date:iso(when),account,recurring,day:Number(day)||new Date().getDate()}}
 function confirmVoice(){if(voiceDraft?.manual){let t=document.getElementById('voiceText')?.value||'';voiceDraft=parseVoice(t);if(!voiceDraft)return showToast('Não consegui identificar o valor')}let v=voiceDraft;if(!v)return;dashboardMonth=monthKey(v.date);localStorage.setItem('md_dashboard_month',dashboardMonth);if(v.recurring&&v.type==='expense'){data.fixed.push({id:Date.now(),value:v.value,desc:v.desc,category:v.category,day:v.day,active:true});save();closeSheets();showToast('Conta fixa criada por voz');return}data.transactions.push({id:Date.now(),type:v.type,value:v.value,desc:v.desc,category:v.category,date:v.date,account:v.account});save();closeSheets();showToast((v.type==='expense'&&limitWarning(v.category,monthKey(v.date)))||'Lançamento por voz salvo')}
 function normalizeBackupData(x){
   let source=(x&&x.data&&typeof x.data==='object')?x.data:x;
@@ -476,6 +542,7 @@ function normalizeBackupData(x){
   if(!Array.isArray(source.payments))source.payments=[];
   if(!source.limits||typeof source.limits!=='object'||Array.isArray(source.limits))source.limits={};
   if(!Array.isArray(source.goals))source.goals=[];
+  ensureCatsOn(source);
   return source
 }
 function exportData(){
@@ -530,8 +597,8 @@ function importData(e){
 window.onNativeBackupExported=function(){showToast('Backup salvo no aparelho')}
 window.onNativeBackupError=function(message){showToast(message||'Não foi possível concluir o backup')}
 window.onNativeBackupImported=function(raw){applyImportedBackup(raw)}
-function seedDemo(){if(!confirm('ATENÇÃO: isso SUBSTITUI todos os seus dados atuais por dados de exemplo. Se ainda não fez backup, cancele e exporte antes. Continuar?'))return;let y=iso(new Date()).slice(0,8);data={transactions:[{id:1,type:'income',value:6500,desc:'Salário',category:'Salário',date:y+'05',account:'Conta bancária'},{id:2,type:'expense',value:185.42,desc:'Supermercado',category:'Alimentação',date:y+'12',account:'Pix'},{id:3,type:'expense',value:220,desc:'Combustível',category:'Carro',date:y+'17',account:'Crédito'}],fixed:[{id:11,value:1450,desc:'Financiamento do carro',category:'Carro',day:10,active:true},{id:12,value:800,desc:'Pensão alimentícia',category:'Pensão',day:5,active:true},{id:13,value:165,desc:'Seguro do carro',category:'Seguros',day:18,active:true},{id:14,value:95,desc:'Seguro da moto',category:'Seguros',day:18,active:true}],cards:[{id:21,name:'Cartão principal',dueDay:10,limit:5000}],cardInvoices:[{id:22,cardId:21,month:y.slice(0,7),baseValue:640}],cardItems:[{id:23,cardId:21,month:y.slice(0,7),value:220,desc:'Combustível',category:'Carro',date:y+'17'}],payments:[],limits:{'Alimentação':800,'Carro':600},goals:[{id:31,name:'Reserva de emergência',target:10000,saved:2500,deadline:''}]};currentCardId=21;save();go('home');showToast('Exemplo carregado')}
-function clearData(){if(confirm('Tem certeza? Isso apaga TODOS os dados deste aparelho (lançamentos, contas fixas, cartões e faturas). Só dá para recuperar com um backup.')){data={transactions:[],fixed:[],cards:[],cardInvoices:[],cardItems:[],payments:[],limits:{},goals:[]};currentCardId=null;save();showToast('Dados apagados')}}
+function seedDemo(){if(!confirm('ATENÇÃO: isso SUBSTITUI todos os seus dados atuais por dados de exemplo. Se ainda não fez backup, cancele e exporte antes. Continuar?'))return;let y=iso(new Date()).slice(0,8);data={transactions:[{id:1,type:'income',value:6500,desc:'Salário',category:'Salário',date:y+'05',account:'Conta bancária'},{id:2,type:'expense',value:185.42,desc:'Supermercado',category:'Alimentação',date:y+'12',account:'Pix'},{id:3,type:'expense',value:220,desc:'Combustível',category:'Carro',date:y+'17',account:'Crédito'}],fixed:[{id:11,value:1450,desc:'Financiamento do carro',category:'Carro',day:10,active:true},{id:12,value:800,desc:'Pensão alimentícia',category:'Pensão',day:5,active:true},{id:13,value:165,desc:'Seguro do carro',category:'Seguros',day:18,active:true},{id:14,value:95,desc:'Seguro da moto',category:'Seguros',day:18,active:true}],cards:[{id:21,name:'Cartão principal',dueDay:10,limit:5000}],cardInvoices:[{id:22,cardId:21,month:y.slice(0,7),baseValue:640}],cardItems:[{id:23,cardId:21,month:y.slice(0,7),value:220,desc:'Combustível',category:'Carro',date:y+'17'}],payments:[],limits:{'Alimentação':800,'Carro':600},goals:[{id:31,name:'Reserva de emergência',target:10000,saved:2500,deadline:''}]};ensureCatsOn(data);currentCardId=21;save();go('home');showToast('Exemplo carregado')}
+function clearData(){if(confirm('Tem certeza? Isso apaga TODOS os dados deste aparelho (lançamentos, contas fixas, cartões e faturas). Só dá para recuperar com um backup.')){data={transactions:[],fixed:[],cards:[],cardInvoices:[],cardItems:[],payments:[],limits:{},goals:[]};ensureCatsOn(data);currentCardId=null;save();showToast('Dados apagados')}}
 document.getElementById('today').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});cats('expense',document.getElementById('category'));cats('expense',document.getElementById('fCategory'));cats('expense',document.getElementById('ciCategory'));currentCardId=data.cards[0]?.id||null;render();setTimeout(()=>{syncNativeReminders();try{if(window.AndroidVoice&&typeof window.AndroidVoice.requestNotificationPermission==='function')window.AndroidVoice.requestNotificationPermission()}catch(e){}},900);
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
