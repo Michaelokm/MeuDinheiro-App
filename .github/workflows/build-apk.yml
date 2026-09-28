@@ -14,7 +14,7 @@ jobs:
       - name: Baixar projeto
         uses: actions/checkout@v4
 
-      - name: Corrigir arquivos enviados pelo Zip2Git
+      - name: Preparar arquivos (aceita texto normal ou Base64 do Zip2Git)
         shell: bash
         run: |
           files=(
@@ -32,9 +32,13 @@ jobs:
           )
 
           for f in "${files[@]}"; do
-            echo "Decodificando $f"
-            base64 --decode "$f" > "$f.tmp"
-            mv "$f.tmp" "$f"
+            if LC_ALL=C grep -q '[^A-Za-z0-9+/=[:space:]]' "$f"; then
+              echo "Texto normal: $f"
+            else
+              echo "Decodificando Base64: $f"
+              tr -d '\r\n ' < "$f" | base64 --decode > "$f.tmp"
+              mv "$f.tmp" "$f"
+            fi
           done
 
       - name: Configurar Java 17
