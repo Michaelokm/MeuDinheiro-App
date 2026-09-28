@@ -1,1 +1,3 @@
-LWtlZXBjbGFzc21lbWJlcnMgY2xhc3MgKiB7CiAgICBAYW5kcm9pZC53ZWJraXQuSmF2YXNjcmlwdEludGVyZmFjZSA8bWV0aG9kcz47Cn0K
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}

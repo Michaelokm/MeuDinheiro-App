@@ -1,1 +1,9 @@
-PHJlc291cmNlcz4KICAgIDxzdHlsZSBuYW1lPSJBcHBUaGVtZSIgcGFyZW50PSJhbmRyb2lkOnN0eWxlL1RoZW1lLk1hdGVyaWFsLk5vQWN0aW9uQmFyIj4KICAgICAgICA8aXRlbSBuYW1lPSJhbmRyb2lkOmZvbnRGYW1pbHkiPnNhbnM8L2l0ZW0+CiAgICAgICAgPGl0ZW0gbmFtZT0iYW5kcm9pZDp3aW5kb3dMaWdodFN0YXR1c0JhciI+ZmFsc2U8L2l0ZW0+CiAgICAgICAgPGl0ZW0gbmFtZT0iYW5kcm9pZDpzdGF0dXNCYXJDb2xvciI+IzBEMTAxNjwvaXRlbT4KICAgICAgICA8aXRlbSBuYW1lPSJhbmRyb2lkOm5hdmlnYXRpb25CYXJDb2xvciI+IzBEMTAxNjwvaXRlbT4KICAgICAgICA8aXRlbSBuYW1lPSJhbmRyb2lkOndpbmRvd0FjdGlvbk1vZGVPdmVybGF5Ij50cnVlPC9pdGVtPgogICAgPC9zdHlsZT4KPC9yZXNvdXJjZXM+Cg==
+<resources>
+    <style name="AppTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#0D1016</item>
+        <item name="android:navigationBarColor">#0D1016</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+</resources>

@@ -1,1 +1,469 @@
-cGFja2FnZSBjb20ubWljaGFlbC5tZXVkaW5oZWlybzsKCmltcG9ydCBhbmRyb2lkLk1hbmlmZXN0OwppbXBvcnQgYW5kcm9pZC5hcHAuQWN0aXZpdHk7CmltcG9ydCBhbmRyb2lkLmFwcC5BbGFybU1hbmFnZXI7CmltcG9ydCBhbmRyb2lkLmFwcC5Ob3RpZmljYXRpb247CmltcG9ydCBhbmRyb2lkLmFwcC5Ob3RpZmljYXRpb25DaGFubmVsOwppbXBvcnQgYW5kcm9pZC5hcHAuTm90aWZpY2F0aW9uTWFuYWdlcjsKaW1wb3J0IGFuZHJvaWQuYXBwLlBlbmRpbmdJbnRlbnQ7CmltcG9ydCBhbmRyb2lkLmNvbnRlbnQuQWN0aXZpdHlOb3RGb3VuZEV4Y2VwdGlvbjsKaW1wb3J0IGFuZHJvaWQuY29udGVudC5Ccm9hZGNhc3RSZWNlaXZlcjsKaW1wb3J0IGFuZHJvaWQuY29udGVudC5Db250ZXh0OwppbXBvcnQgYW5kcm9pZC5jb250ZW50LkludGVudDsKaW1wb3J0IGFuZHJvaWQuY29udGVudC5TaGFyZWRQcmVmZXJlbmNlczsKaW1wb3J0IGFuZHJvaWQuY29udGVudC5wbS5QYWNrYWdlTWFuYWdlcjsKaW1wb3J0IGFuZHJvaWQub3MuQnVpbGQ7CmltcG9ydCBhbmRyb2lkLm9zLkJ1bmRsZTsKaW1wb3J0IGFuZHJvaWQubmV0LlVyaTsKaW1wb3J0IGFuZHJvaWQuc3BlZWNoLlJlY29nbml6ZXJJbnRlbnQ7CmltcG9ydCBhbmRyb2lkLnNwZWVjaC50dHMuVGV4dFRvU3BlZWNoOwppbXBvcnQgYW5kcm9pZC53ZWJraXQuSmF2YXNjcmlwdEludGVyZmFjZTsKaW1wb3J0IGFuZHJvaWQud2Via2l0LldlYlNldHRpbmdzOwppbXBvcnQgYW5kcm9pZC53ZWJraXQuV2ViVmlldzsKaW1wb3J0IGFuZHJvaWQud2Via2l0LldlYlZpZXdDbGllbnQ7CmltcG9ydCBhbmRyb2lkLndlYmtpdC5XZWJDaHJvbWVDbGllbnQ7CgppbXBvcnQgb3JnLmpzb24uSlNPTkFycmF5OwppbXBvcnQgb3JnLmpzb24uSlNPTk9iamVjdDsKCmltcG9ydCBqYXZhLnRpbWUuTG9jYWxEYXRlOwppbXBvcnQgamF2YS50aW1lLkxvY2FsRGF0ZVRpbWU7CmltcG9ydCBqYXZhLnRpbWUuTG9jYWxUaW1lOwppbXBvcnQgamF2YS50aW1lLlpvbmVJZDsKaW1wb3J0IGphdmEudXRpbC5BcnJheUxpc3Q7CmltcG9ydCBqYXZhLnV0aWwuTG9jYWxlOwppbXBvcnQgamF2YS5pby5JbnB1dFN0cmVhbTsKaW1wb3J0IGphdmEuaW8uT3V0cHV0U3RyZWFtOwppbXBvcnQgamF2YS5pby5CeXRlQXJyYXlPdXRwdXRTdHJlYW07CmltcG9ydCBqYXZhLm5pby5jaGFyc2V0LlN0YW5kYXJkQ2hhcnNldHM7CgpwdWJsaWMgY2xhc3MgTWFpbkFjdGl2aXR5IGV4dGVuZHMgQWN0aXZpdHkgewogICAgcHJpdmF0ZSBzdGF0aWMgZmluYWwgaW50IFZPSUNFX1JFUVVFU1QgPSA0MDE3OwogICAgcHJpdmF0ZSBzdGF0aWMgZmluYWwgaW50IE5PVElGSUNBVElPTl9SRVFVRVNUID0gNDAxODsKICAgIHByaXZhdGUgc3RhdGljIGZpbmFsIGludCBCQUNLVVBfRVhQT1JUX1JFUVVFU1QgPSA0MDE5OwogICAgcHJpdmF0ZSBzdGF0aWMgZmluYWwgaW50IEJBQ0tVUF9JTVBPUlRfUkVRVUVTVCA9IDQwMjA7CiAgICBwcml2YXRlIHN0YXRpYyBmaW5hbCBTdHJpbmcgQ0hBTk5FTF9JRCA9ICJ2ZW5jaW1lbnRvcyI7CiAgICBwcml2YXRlIHN0YXRpYyBmaW5hbCBTdHJpbmcgUFJFRlMgPSAibWV1X2RpbmhlaXJvX3JlbWluZGVycyI7CiAgICBwcml2YXRlIHN0YXRpYyBmaW5hbCBTdHJpbmcgUFJFRl9KU09OID0gInJlbWluZGVyc19qc29uIjsKCiAgICBwcml2YXRlIFdlYlZpZXcgd2ViVmlldzsKICAgIHByaXZhdGUgVGV4dFRvU3BlZWNoIHRleHRUb1NwZWVjaDsKICAgIHByaXZhdGUgYm9vbGVhbiB0dHNSZWFkeSA9IGZhbHNlOwogICAgcHJpdmF0ZSBTdHJpbmcgcGVuZGluZ0JhY2t1cEpzb24gPSBudWxsOwoKICAgIEBPdmVycmlkZQogICAgcHJvdGVjdGVkIHZvaWQgb25DcmVhdGUoQnVuZGxlIHNhdmVkSW5zdGFuY2VTdGF0ZSkgewogICAgICAgIHN1cGVyLm9uQ3JlYXRlKHNhdmVkSW5zdGFuY2VTdGF0ZSk7CgogICAgICAgIGdldFdpbmRvdygpLnNldFN0YXR1c0JhckNvbG9yKDB4RkYwRDEwMTYpOwogICAgICAgIGdldFdpbmRvdygpLnNldE5hdmlnYXRpb25CYXJDb2xvcigweEZGMEQxMDE2KTsKICAgICAgICBnZXRXaW5kb3coKS5nZXREZWNvclZpZXcoKS5zZXRTeXN0ZW1VaVZpc2liaWxpdHkoMCk7CgogICAgICAgIGVuc3VyZU5vdGlmaWNhdGlvbkNoYW5uZWwodGhpcyk7CgogICAgICAgIHRleHRUb1NwZWVjaCA9IG5ldyBUZXh0VG9TcGVlY2godGhpcywgc3RhdHVzIC0+IHsKICAgICAgICAgICAgaWYgKHN0YXR1cyA9PSBUZXh0VG9TcGVlY2guU1VDQ0VTUykgewogICAgICAgICAgICAgICAgaW50IHJlc3VsdCA9IHRleHRUb1NwZWVjaC5zZXRMYW5ndWFnZShuZXcgTG9jYWxlKCJwdCIsICJCUiIpKTsKICAgICAgICAgICAgICAgIHR0c1JlYWR5ID0gcmVzdWx0ICE9IFRleHRUb1NwZWVjaC5MQU5HX01JU1NJTkdfREFUQSAmJiByZXN1bHQgIT0gVGV4dFRvU3BlZWNoLkxBTkdfTk9UX1NVUFBPUlRFRDsKICAgICAgICAgICAgICAgIHRleHRUb1NwZWVjaC5zZXRTcGVlY2hSYXRlKDEuMGYpOwogICAgICAgICAgICB9CiAgICAgICAgfSk7CgogICAgICAgIHdlYlZpZXcgPSBuZXcgV2ViVmlldyh0aGlzKTsKICAgICAgICB3ZWJWaWV3LnNldEJhY2tncm91bmRDb2xvcigweEZGMEQxMDE2KTsKICAgICAgICBXZWJTZXR0aW5ncyBzZXR0aW5ncyA9IHdlYlZpZXcuZ2V0U2V0dGluZ3MoKTsKICAgICAgICBzZXR0aW5ncy5zZXRKYXZhU2NyaXB0RW5hYmxlZCh0cnVlKTsKICAgICAgICBzZXR0aW5ncy5zZXREb21TdG9yYWdlRW5hYmxlZCh0cnVlKTsKICAgICAgICBzZXR0aW5ncy5zZXREYXRhYmFzZUVuYWJsZWQodHJ1ZSk7CiAgICAgICAgc2V0dGluZ3Muc2V0QWxsb3dGaWxlQWNjZXNzKHRydWUpOwogICAgICAgIHNldHRpbmdzLnNldEFsbG93Q29udGVudEFjY2VzcyhmYWxzZSk7CiAgICAgICAgc2V0dGluZ3Muc2V0U3VwcG9ydFpvb20oZmFsc2UpOwogICAgICAgIHNldHRpbmdzLnNldEJ1aWx0SW5ab29tQ29udHJvbHMoZmFsc2UpOwogICAgICAgIHNldHRpbmdzLnNldERpc3BsYXlab29tQ29udHJvbHMoZmFsc2UpOwogICAgICAgIHNldHRpbmdzLnNldE1lZGlhUGxheWJhY2tSZXF1aXJlc1VzZXJHZXN0dXJlKHRydWUpOwoKICAgICAgICB3ZWJWaWV3LnNldFdlYlZpZXdDbGllbnQobmV3IFdlYlZpZXdDbGllbnQoKSk7CiAgICAgICAgd2ViVmlldy5zZXRXZWJDaHJvbWVDbGllbnQobmV3IFdlYkNocm9tZUNsaWVudCgpKTsKICAgICAgICB3ZWJWaWV3LmFkZEphdmFzY3JpcHRJbnRlcmZhY2UobmV3IFZvaWNlQnJpZGdlKCksICJBbmRyb2lkVm9pY2UiKTsKICAgICAgICBzZXRDb250ZW50Vmlldyh3ZWJWaWV3KTsKICAgICAgICB3ZWJWaWV3LmxvYWRVcmwoImZpbGU6Ly8vYW5kcm9pZF9hc3NldC9pbmRleC5odG1sIik7CiAgICB9CgogICAgcHVibGljIGNsYXNzIFZvaWNlQnJpZGdlIHsKICAgICAgICBASmF2YXNjcmlwdEludGVyZmFjZQogICAgICAgIHB1YmxpYyB2b2lkIHN0YXJ0TGlzdGVuaW5nKCkgewogICAgICAgICAgICBydW5PblVpVGhyZWFkKCgpIC0+IHsKICAgICAgICAgICAgICAgIEludGVudCBpbnRlbnQgPSBuZXcgSW50ZW50KFJlY29nbml6ZXJJbnRlbnQuQUNUSU9OX1JFQ09HTklaRV9TUEVFQ0gpOwogICAgICAgICAgICAgICAgaW50ZW50LnB1dEV4dHJhKFJlY29nbml6ZXJJbnRlbnQuRVhUUkFfTEFOR1VBR0VfTU9ERUwsIFJlY29nbml6ZXJJbnRlbnQuTEFOR1VBR0VfTU9ERUxfRlJFRV9GT1JNKTsKICAgICAgICAgICAgICAgIGludGVudC5wdXRFeHRyYShSZWNvZ25pemVySW50ZW50LkVYVFJBX0xBTkdVQUdFLCAicHQtQlIiKTsKICAgICAgICAgICAgICAgIGludGVudC5wdXRFeHRyYShSZWNvZ25pemVySW50ZW50LkVYVFJBX0xBTkdVQUdFX1BSRUZFUkVOQ0UsICJwdC1CUiIpOwogICAgICAgICAgICAgICAgaW50ZW50LnB1dEV4dHJhKFJlY29nbml6ZXJJbnRlbnQuRVhUUkFfT05MWV9SRVRVUk5fTEFOR1VBR0VfUFJFRkVSRU5DRSwgZmFsc2UpOwogICAgICAgICAgICAgICAgaW50ZW50LnB1dEV4dHJhKFJlY29nbml6ZXJJbnRlbnQuRVhUUkFfTUFYX1JFU1VMVFMsIDEpOwogICAgICAgICAgICAgICAgaW50ZW50LnB1dEV4dHJhKFJlY29nbml6ZXJJbnRlbnQuRVhUUkFfUFJPTVBULCAiRmFsZSB1bSBsYW7Dp2FtZW50byBvdSB1bWEgcGVyZ3VudGEiKTsKICAgICAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICAgICAgc3RhcnRBY3Rpdml0eUZvclJlc3VsdChpbnRlbnQsIFZPSUNFX1JFUVVFU1QpOwogICAgICAgICAgICAgICAgfSBjYXRjaCAoQWN0aXZpdHlOb3RGb3VuZEV4Y2VwdGlvbiBlKSB7CiAgICAgICAgICAgICAgICAgICAgc2VuZFZvaWNlRXJyb3IoIk8gcmVjb25oZWNpbWVudG8gZGUgdm96IGRvIEFuZHJvaWQgbsOjbyBlc3TDoSBkaXNwb27DrXZlbC4iKTsKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSk7CiAgICAgICAgfQoKICAgICAgICBASmF2YXNjcmlwdEludGVyZmFjZQogICAgICAgIHB1YmxpYyB2b2lkIHNwZWFrKFN0cmluZyB0ZXh0KSB7CiAgICAgICAgICAgIGlmICh0ZXh0ID09IG51bGwgfHwgdGV4dC50cmltKCkuaXNFbXB0eSgpKSByZXR1cm47CiAgICAgICAgICAgIHJ1bk9uVWlUaHJlYWQoKCkgLT4gewogICAgICAgICAgICAgICAgaWYgKHR0c1JlYWR5ICYmIHRleHRUb1NwZWVjaCAhPSBudWxsKSB7CiAgICAgICAgICAgICAgICAgICAgdGV4dFRvU3BlZWNoLnN0b3AoKTsKICAgICAgICAgICAgICAgICAgICB0ZXh0VG9TcGVlY2guc3BlYWsodGV4dCwgVGV4dFRvU3BlZWNoLlFVRVVFX0ZMVVNILCBudWxsLCAibWV1LWRpbmhlaXJvLXJlc3Bvc3RhIik7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0pOwogICAgICAgIH0KCiAgICAgICAgQEphdmFzY3JpcHRJbnRlcmZhY2UKICAgICAgICBwdWJsaWMgdm9pZCBzeW5jUmVtaW5kZXJzKFN0cmluZyBqc29uKSB7CiAgICAgICAgICAgIGlmIChqc29uID09IG51bGwpIHJldHVybjsKICAgICAgICAgICAgcnVuT25VaVRocmVhZCgoKSAtPiBNYWluQWN0aXZpdHkuc3luY1JlbWluZGVycyhNYWluQWN0aXZpdHkudGhpcywganNvbikpOwogICAgICAgIH0KCiAgICAgICAgQEphdmFzY3JpcHRJbnRlcmZhY2UKICAgICAgICBwdWJsaWMgdm9pZCByZXF1ZXN0Tm90aWZpY2F0aW9uUGVybWlzc2lvbigpIHsKICAgICAgICAgICAgaWYgKEJ1aWxkLlZFUlNJT04uU0RLX0lOVCA+PSAzMyAmJgogICAgICAgICAgICAgICAgICAgIGNoZWNrU2VsZlBlcm1pc3Npb24oTWFuaWZlc3QucGVybWlzc2lvbi5QT1NUX05PVElGSUNBVElPTlMpICE9IFBhY2thZ2VNYW5hZ2VyLlBFUk1JU1NJT05fR1JBTlRFRCkgewogICAgICAgICAgICAgICAgcnVuT25VaVRocmVhZCgoKSAtPiByZXF1ZXN0UGVybWlzc2lvbnMoCiAgICAgICAgICAgICAgICAgICAgICAgIG5ldyBTdHJpbmdbXXtNYW5pZmVzdC5wZXJtaXNzaW9uLlBPU1RfTk9USUZJQ0FUSU9OU30sCiAgICAgICAgICAgICAgICAgICAgICAgIE5PVElGSUNBVElPTl9SRVFVRVNUCiAgICAgICAgICAgICAgICApKTsKICAgICAgICAgICAgfQogICAgICAgIH0KCiAgICAgICAgQEphdmFzY3JpcHRJbnRlcmZhY2UKICAgICAgICBwdWJsaWMgdm9pZCBleHBvcnRCYWNrdXAoU3RyaW5nIGpzb24pIHsKICAgICAgICAgICAgaWYgKGpzb24gPT0gbnVsbCB8fCBqc29uLnRyaW0oKS5pc0VtcHR5KCkpIHJldHVybjsKICAgICAgICAgICAgcGVuZGluZ0JhY2t1cEpzb24gPSBqc29uOwogICAgICAgICAgICBydW5PblVpVGhyZWFkKCgpIC0+IHsKICAgICAgICAgICAgICAgIEludGVudCBpbnRlbnQgPSBuZXcgSW50ZW50KEludGVudC5BQ1RJT05fQ1JFQVRFX0RPQ1VNRU5UKTsKICAgICAgICAgICAgICAgIGludGVudC5hZGRDYXRlZ29yeShJbnRlbnQuQ0FURUdPUllfT1BFTkFCTEUpOwogICAgICAgICAgICAgICAgaW50ZW50LnNldFR5cGUoImFwcGxpY2F0aW9uL2pzb24iKTsKICAgICAgICAgICAgICAgIGludGVudC5wdXRFeHRyYShJbnRlbnQuRVhUUkFfVElUTEUsICJNZXVEaW5oZWlyby1iYWNrdXAtIiArIExvY2FsRGF0ZS5ub3coKSArICIuanNvbiIpOwogICAgICAgICAgICAgICAgdHJ5IHsKICAgICAgICAgICAgICAgICAgICBzdGFydEFjdGl2aXR5Rm9yUmVzdWx0KGludGVudCwgQkFDS1VQX0VYUE9SVF9SRVFVRVNUKTsKICAgICAgICAgICAgICAgIH0gY2F0Y2ggKEV4Y2VwdGlvbiBlKSB7CiAgICAgICAgICAgICAgICAgICAgc2VuZEJhY2t1cEVycm9yKCJOw6NvIGZvaSBwb3Nzw612ZWwgYWJyaXIgbyBsb2NhbCBwYXJhIHNhbHZhciBvIGJhY2t1cC4iKTsKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSk7CiAgICAgICAgfQoKICAgICAgICBASmF2YXNjcmlwdEludGVyZmFjZQogICAgICAgIHB1YmxpYyB2b2lkIGltcG9ydEJhY2t1cCgpIHsKICAgICAgICAgICAgcnVuT25VaVRocmVhZCgoKSAtPiB7CiAgICAgICAgICAgICAgICBJbnRlbnQgaW50ZW50ID0gbmV3IEludGVudChJbnRlbnQuQUNUSU9OX09QRU5fRE9DVU1FTlQpOwogICAgICAgICAgICAgICAgaW50ZW50LmFkZENhdGVnb3J5KEludGVudC5DQVRFR09SWV9PUEVOQUJMRSk7CiAgICAgICAgICAgICAgICBpbnRlbnQuc2V0VHlwZSgiYXBwbGljYXRpb24vanNvbiIpOwogICAgICAgICAgICAgICAgdHJ5IHsKICAgICAgICAgICAgICAgICAgICBzdGFydEFjdGl2aXR5Rm9yUmVzdWx0KGludGVudCwgQkFDS1VQX0lNUE9SVF9SRVFVRVNUKTsKICAgICAgICAgICAgICAgIH0gY2F0Y2ggKEV4Y2VwdGlvbiBlKSB7CiAgICAgICAgICAgICAgICAgICAgc2VuZEJhY2t1cEVycm9yKCJOw6NvIGZvaSBwb3Nzw612ZWwgYWJyaXIgbyBzZWxldG9yIGRlIGFycXVpdm9zLiIpOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9KTsKICAgICAgICB9CiAgICB9CgogICAgcHJpdmF0ZSBzdGF0aWMgdm9pZCBlbnN1cmVOb3RpZmljYXRpb25DaGFubmVsKENvbnRleHQgY29udGV4dCkgewogICAgICAgIGlmIChCdWlsZC5WRVJTSU9OLlNES19JTlQgPj0gMjYpIHsKICAgICAgICAgICAgTm90aWZpY2F0aW9uTWFuYWdlciBubSA9IChOb3RpZmljYXRpb25NYW5hZ2VyKSBjb250ZXh0LmdldFN5c3RlbVNlcnZpY2UoQ29udGV4dC5OT1RJRklDQVRJT05fU0VSVklDRSk7CiAgICAgICAgICAgIE5vdGlmaWNhdGlvbkNoYW5uZWwgY2hhbm5lbCA9IG5ldyBOb3RpZmljYXRpb25DaGFubmVsKAogICAgICAgICAgICAgICAgICAgIENIQU5ORUxfSUQsCiAgICAgICAgICAgICAgICAgICAgIlZlbmNpbWVudG9zIiwKICAgICAgICAgICAgICAgICAgICBOb3RpZmljYXRpb25NYW5hZ2VyLklNUE9SVEFOQ0VfSElHSAogICAgICAgICAgICApOwogICAgICAgICAgICBjaGFubmVsLnNldERlc2NyaXB0aW9uKCJBdmlzb3MgZGUgY29udGFzIGUgZmF0dXJhcyBxdWUgdmVuY2VtIGVtIDIgZGlhcyIpOwogICAgICAgICAgICBubS5jcmVhdGVOb3RpZmljYXRpb25DaGFubmVsKGNoYW5uZWwpOwogICAgICAgIH0KICAgIH0KCiAgICBwcml2YXRlIHN0YXRpYyBpbnQgcmVtaW5kZXJDb2RlKFN0cmluZyBrZXkpIHsKICAgICAgICByZXR1cm4ga2V5ID09IG51bGwgPyAxIDogKGtleS5oYXNoQ29kZSgpICYgMHg3ZmZmZmZmZik7CiAgICB9CgogICAgcHJpdmF0ZSBzdGF0aWMgUGVuZGluZ0ludGVudCByZW1pbmRlclBlbmRpbmdJbnRlbnQoQ29udGV4dCBjb250ZXh0LCBKU09OT2JqZWN0IG9iaikgewogICAgICAgIFN0cmluZyBrZXkgPSBvYmoub3B0U3RyaW5nKCJrZXkiLCBTdHJpbmcudmFsdWVPZihTeXN0ZW0uY3VycmVudFRpbWVNaWxsaXMoKSkpOwogICAgICAgIEludGVudCBpbnRlbnQgPSBuZXcgSW50ZW50KGNvbnRleHQsIFJlbWluZGVyUmVjZWl2ZXIuY2xhc3MpOwogICAgICAgIGludGVudC5zZXRBY3Rpb24oImNvbS5taWNoYWVsLm1ldWRpbmhlaXJvLlJFTUlOREVSLiIgKyBrZXkpOwogICAgICAgIGludGVudC5wdXRFeHRyYSgia2V5Iiwga2V5KTsKICAgICAgICBpbnRlbnQucHV0RXh0cmEoInRpdGxlIiwgb2JqLm9wdFN0cmluZygidGl0bGUiLCAiTWV1IERpbmhlaXJvIikpOwogICAgICAgIGludGVudC5wdXRFeHRyYSgibWVzc2FnZSIsIG9iai5vcHRTdHJpbmcoIm1lc3NhZ2UiLCAiVm9jw6ogdGVtIHVtIHZlbmNpbWVudG8gcHLDs3hpbW8uIikpOwogICAgICAgIHJldHVybiBQZW5kaW5nSW50ZW50LmdldEJyb2FkY2FzdCgKICAgICAgICAgICAgICAgIGNvbnRleHQsCiAgICAgICAgICAgICAgICByZW1pbmRlckNvZGUoa2V5KSwKICAgICAgICAgICAgICAgIGludGVudCwKICAgICAgICAgICAgICAgIFBlbmRpbmdJbnRlbnQuRkxBR19VUERBVEVfQ1VSUkVOVCB8IFBlbmRpbmdJbnRlbnQuRkxBR19JTU1VVEFCTEUKICAgICAgICApOwogICAgfQoKICAgIHByaXZhdGUgc3RhdGljIHZvaWQgY2FuY2VsSnNvbihDb250ZXh0IGNvbnRleHQsIFN0cmluZyBqc29uKSB7CiAgICAgICAgdHJ5IHsKICAgICAgICAgICAgSlNPTkFycmF5IGFyciA9IG5ldyBKU09OQXJyYXkoanNvbiA9PSBudWxsID8gIltdIiA6IGpzb24pOwogICAgICAgICAgICBBbGFybU1hbmFnZXIgYW0gPSAoQWxhcm1NYW5hZ2VyKSBjb250ZXh0LmdldFN5c3RlbVNlcnZpY2UoQ29udGV4dC5BTEFSTV9TRVJWSUNFKTsKICAgICAgICAgICAgZm9yIChpbnQgaSA9IDA7IGkgPCBhcnIubGVuZ3RoKCk7IGkrKykgewogICAgICAgICAgICAgICAgSlNPTk9iamVjdCBvYmogPSBhcnIub3B0SlNPTk9iamVjdChpKTsKICAgICAgICAgICAgICAgIGlmIChvYmogPT0gbnVsbCkgY29udGludWU7CiAgICAgICAgICAgICAgICBhbS5jYW5jZWwocmVtaW5kZXJQZW5kaW5nSW50ZW50KGNvbnRleHQsIG9iaikpOwogICAgICAgICAgICB9CiAgICAgICAgfSBjYXRjaCAoRXhjZXB0aW9uIGlnbm9yZWQpIHsKICAgICAgICB9CiAgICB9CgogICAgcHJpdmF0ZSBzdGF0aWMgdm9pZCBzY2hlZHVsZUpzb24oQ29udGV4dCBjb250ZXh0LCBTdHJpbmcganNvbikgewogICAgICAgIHRyeSB7CiAgICAgICAgICAgIEpTT05BcnJheSBhcnIgPSBuZXcgSlNPTkFycmF5KGpzb24gPT0gbnVsbCA/ICJbXSIgOiBqc29uKTsKICAgICAgICAgICAgQWxhcm1NYW5hZ2VyIGFtID0gKEFsYXJtTWFuYWdlcikgY29udGV4dC5nZXRTeXN0ZW1TZXJ2aWNlKENvbnRleHQuQUxBUk1fU0VSVklDRSk7CiAgICAgICAgICAgIGxvbmcgbm93TXMgPSBTeXN0ZW0uY3VycmVudFRpbWVNaWxsaXMoKTsKICAgICAgICAgICAgTG9jYWxEYXRlIHRvZGF5ID0gTG9jYWxEYXRlLm5vdygpOwoKICAgICAgICAgICAgZm9yIChpbnQgaSA9IDA7IGkgPCBhcnIubGVuZ3RoKCk7IGkrKykgewogICAgICAgICAgICAgICAgSlNPTk9iamVjdCBvYmogPSBhcnIub3B0SlNPTk9iamVjdChpKTsKICAgICAgICAgICAgICAgIGlmIChvYmogPT0gbnVsbCkgY29udGludWU7CgogICAgICAgICAgICAgICAgU3RyaW5nIGR1ZVRleHQgPSBvYmoub3B0U3RyaW5nKCJkdWVEYXRlIiwgIiIpOwogICAgICAgICAgICAgICAgaWYgKGR1ZVRleHQuaXNFbXB0eSgpKSBjb250aW51ZTsKCiAgICAgICAgICAgICAgICBMb2NhbERhdGUgZHVlRGF0ZSA9IExvY2FsRGF0ZS5wYXJzZShkdWVUZXh0KTsKICAgICAgICAgICAgICAgIGlmIChkdWVEYXRlLmlzQmVmb3JlKHRvZGF5KSkgY29udGludWU7CgogICAgICAgICAgICAgICAgTG9jYWxEYXRlIHJlbWluZGVyRGF0ZSA9IGR1ZURhdGUubWludXNEYXlzKDIpOwogICAgICAgICAgICAgICAgTG9jYWxEYXRlVGltZSBsb2NhbERhdGVUaW1lID0gTG9jYWxEYXRlVGltZS5vZihyZW1pbmRlckRhdGUsIExvY2FsVGltZS5vZig5LCAwKSk7CiAgICAgICAgICAgICAgICBsb25nIHRyaWdnZXIgPSBsb2NhbERhdGVUaW1lLmF0Wm9uZShab25lSWQuc3lzdGVtRGVmYXVsdCgpKS50b0luc3RhbnQoKS50b0Vwb2NoTWlsbGkoKTsKCiAgICAgICAgICAgICAgICBpZiAodHJpZ2dlciA8PSBub3dNcyAmJiAhZHVlRGF0ZS5pc0JlZm9yZSh0b2RheSkpIHsKICAgICAgICAgICAgICAgICAgICB0cmlnZ2VyID0gbm93TXMgKyA1MDAwTDsKICAgICAgICAgICAgICAgIH0KCiAgICAgICAgICAgICAgICBQZW5kaW5nSW50ZW50IHBpID0gcmVtaW5kZXJQZW5kaW5nSW50ZW50KGNvbnRleHQsIG9iaik7CiAgICAgICAgICAgICAgICBpZiAoQnVpbGQuVkVSU0lPTi5TREtfSU5UID49IDIzKSB7CiAgICAgICAgICAgICAgICAgICAgYW0uc2V0QW5kQWxsb3dXaGlsZUlkbGUoQWxhcm1NYW5hZ2VyLlJUQ19XQUtFVVAsIHRyaWdnZXIsIHBpKTsKICAgICAgICAgICAgICAgIH0gZWxzZSB7CiAgICAgICAgICAgICAgICAgICAgYW0uc2V0KEFsYXJtTWFuYWdlci5SVENfV0FLRVVQLCB0cmlnZ2VyLCBwaSk7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0KICAgICAgICB9IGNhdGNoIChFeGNlcHRpb24gaWdub3JlZCkgewogICAgICAgIH0KICAgIH0KCiAgICBwcml2YXRlIHN0YXRpYyB2b2lkIHN5bmNSZW1pbmRlcnMoQ29udGV4dCBjb250ZXh0LCBTdHJpbmcganNvbikgewogICAgICAgIFNoYXJlZFByZWZlcmVuY2VzIHByZWZzID0gY29udGV4dC5nZXRTaGFyZWRQcmVmZXJlbmNlcyhQUkVGUywgQ29udGV4dC5NT0RFX1BSSVZBVEUpOwogICAgICAgIFN0cmluZyBvbGRKc29uID0gcHJlZnMuZ2V0U3RyaW5nKFBSRUZfSlNPTiwgIltdIik7CiAgICAgICAgY2FuY2VsSnNvbihjb250ZXh0LCBvbGRKc29uKTsKICAgICAgICBwcmVmcy5lZGl0KCkucHV0U3RyaW5nKFBSRUZfSlNPTiwganNvbikuYXBwbHkoKTsKICAgICAgICBzY2hlZHVsZUpzb24oY29udGV4dCwganNvbik7CiAgICB9CgogICAgcHJpdmF0ZSBzdGF0aWMgdm9pZCByZXNjaGVkdWxlU3RvcmVkKENvbnRleHQgY29udGV4dCkgewogICAgICAgIFNoYXJlZFByZWZlcmVuY2VzIHByZWZzID0gY29udGV4dC5nZXRTaGFyZWRQcmVmZXJlbmNlcyhQUkVGUywgQ29udGV4dC5NT0RFX1BSSVZBVEUpOwogICAgICAgIHNjaGVkdWxlSnNvbihjb250ZXh0LCBwcmVmcy5nZXRTdHJpbmcoUFJFRl9KU09OLCAiW10iKSk7CiAgICB9CgogICAgcHVibGljIHN0YXRpYyBjbGFzcyBSZW1pbmRlclJlY2VpdmVyIGV4dGVuZHMgQnJvYWRjYXN0UmVjZWl2ZXIgewogICAgICAgIEBPdmVycmlkZQogICAgICAgIHB1YmxpYyB2b2lkIG9uUmVjZWl2ZShDb250ZXh0IGNvbnRleHQsIEludGVudCBpbnRlbnQpIHsKICAgICAgICAgICAgU3RyaW5nIGFjdGlvbiA9IGludGVudC5nZXRBY3Rpb24oKTsKICAgICAgICAgICAgaWYgKEludGVudC5BQ1RJT05fQk9PVF9DT01QTEVURUQuZXF1YWxzKGFjdGlvbikgfHwgSW50ZW50LkFDVElPTl9NWV9QQUNLQUdFX1JFUExBQ0VELmVxdWFscyhhY3Rpb24pKSB7CiAgICAgICAgICAgICAgICByZXNjaGVkdWxlU3RvcmVkKGNvbnRleHQpOwogICAgICAgICAgICAgICAgcmV0dXJuOwogICAgICAgICAgICB9CgogICAgICAgICAgICBpZiAoQnVpbGQuVkVSU0lPTi5TREtfSU5UID49IDMzICYmCiAgICAgICAgICAgICAgICAgICAgY29udGV4dC5jaGVja1NlbGZQZXJtaXNzaW9uKE1hbmlmZXN0LnBlcm1pc3Npb24uUE9TVF9OT1RJRklDQVRJT05TKSAhPSBQYWNrYWdlTWFuYWdlci5QRVJNSVNTSU9OX0dSQU5URUQpIHsKICAgICAgICAgICAgICAgIHJldHVybjsKICAgICAgICAgICAgfQoKICAgICAgICAgICAgZW5zdXJlTm90aWZpY2F0aW9uQ2hhbm5lbChjb250ZXh0KTsKCiAgICAgICAgICAgIFN0cmluZyBrZXkgPSBpbnRlbnQuZ2V0U3RyaW5nRXh0cmEoImtleSIpOwogICAgICAgICAgICBTdHJpbmcgdGl0bGUgPSBpbnRlbnQuZ2V0U3RyaW5nRXh0cmEoInRpdGxlIik7CiAgICAgICAgICAgIFN0cmluZyBtZXNzYWdlID0gaW50ZW50LmdldFN0cmluZ0V4dHJhKCJtZXNzYWdlIik7CgogICAgICAgICAgICBJbnRlbnQgb3BlbkFwcCA9IG5ldyBJbnRlbnQoY29udGV4dCwgTWFpbkFjdGl2aXR5LmNsYXNzKTsKICAgICAgICAgICAgb3BlbkFwcC5hZGRGbGFncyhJbnRlbnQuRkxBR19BQ1RJVklUWV9DTEVBUl9UT1AgfCBJbnRlbnQuRkxBR19BQ1RJVklUWV9TSU5HTEVfVE9QKTsKICAgICAgICAgICAgUGVuZGluZ0ludGVudCBjb250ZW50SW50ZW50ID0gUGVuZGluZ0ludGVudC5nZXRBY3Rpdml0eSgKICAgICAgICAgICAgICAgICAgICBjb250ZXh0LAogICAgICAgICAgICAgICAgICAgIHJlbWluZGVyQ29kZShrZXkpLAogICAgICAgICAgICAgICAgICAgIG9wZW5BcHAsCiAgICAgICAgICAgICAgICAgICAgUGVuZGluZ0ludGVudC5GTEFHX1VQREFURV9DVVJSRU5UIHwgUGVuZGluZ0ludGVudC5GTEFHX0lNTVVUQUJMRQogICAgICAgICAgICApOwoKICAgICAgICAgICAgTm90aWZpY2F0aW9uLkJ1aWxkZXIgYnVpbGRlciA9IEJ1aWxkLlZFUlNJT04uU0RLX0lOVCA+PSAyNgogICAgICAgICAgICAgICAgICAgID8gbmV3IE5vdGlmaWNhdGlvbi5CdWlsZGVyKGNvbnRleHQsIENIQU5ORUxfSUQpCiAgICAgICAgICAgICAgICAgICAgOiBuZXcgTm90aWZpY2F0aW9uLkJ1aWxkZXIoY29udGV4dCk7CgogICAgICAgICAgICBidWlsZGVyLnNldFNtYWxsSWNvbihhbmRyb2lkLlIuZHJhd2FibGUuaWNfZGlhbG9nX2luZm8pCiAgICAgICAgICAgICAgICAgICAgLnNldENvbnRlbnRUaXRsZSh0aXRsZSA9PSBudWxsID8gIk1ldSBEaW5oZWlybyIgOiB0aXRsZSkKICAgICAgICAgICAgICAgICAgICAuc2V0Q29udGVudFRleHQobWVzc2FnZSA9PSBudWxsID8gIlZvY8OqIHRlbSB1bSB2ZW5jaW1lbnRvIHByw7N4aW1vLiIgOiBtZXNzYWdlKQogICAgICAgICAgICAgICAgICAgIC5zZXRTdHlsZShuZXcgTm90aWZpY2F0aW9uLkJpZ1RleHRTdHlsZSgpLmJpZ1RleHQobWVzc2FnZSkpCiAgICAgICAgICAgICAgICAgICAgLnNldEF1dG9DYW5jZWwodHJ1ZSkKICAgICAgICAgICAgICAgICAgICAuc2V0Q29udGVudEludGVudChjb250ZW50SW50ZW50KQogICAgICAgICAgICAgICAgICAgIC5zZXRXaGVuKFN5c3RlbS5jdXJyZW50VGltZU1pbGxpcygpKTsKCiAgICAgICAgICAgIE5vdGlmaWNhdGlvbk1hbmFnZXIgbm0gPSAoTm90aWZpY2F0aW9uTWFuYWdlcikgY29udGV4dC5nZXRTeXN0ZW1TZXJ2aWNlKENvbnRleHQuTk9USUZJQ0FUSU9OX1NFUlZJQ0UpOwogICAgICAgICAgICBubS5ub3RpZnkocmVtaW5kZXJDb2RlKGtleSksIGJ1aWxkZXIuYnVpbGQoKSk7CiAgICAgICAgfQogICAgfQoKICAgIEBPdmVycmlkZQogICAgcHJvdGVjdGVkIHZvaWQgb25BY3Rpdml0eVJlc3VsdChpbnQgcmVxdWVzdENvZGUsIGludCByZXN1bHRDb2RlLCBJbnRlbnQgZGF0YSkgewogICAgICAgIHN1cGVyLm9uQWN0aXZpdHlSZXN1bHQocmVxdWVzdENvZGUsIHJlc3VsdENvZGUsIGRhdGEpOwoKICAgICAgICBpZiAocmVxdWVzdENvZGUgPT0gQkFDS1VQX0VYUE9SVF9SRVFVRVNUKSB7CiAgICAgICAgICAgIGlmIChyZXN1bHRDb2RlID09IFJFU1VMVF9PSyAmJiBkYXRhICE9IG51bGwgJiYgZGF0YS5nZXREYXRhKCkgIT0gbnVsbCAmJiBwZW5kaW5nQmFja3VwSnNvbiAhPSBudWxsKSB7CiAgICAgICAgICAgICAgICBVcmkgdXJpID0gZGF0YS5nZXREYXRhKCk7CiAgICAgICAgICAgICAgICB0cnkgKE91dHB1dFN0cmVhbSBvdXQgPSBnZXRDb250ZW50UmVzb2x2ZXIoKS5vcGVuT3V0cHV0U3RyZWFtKHVyaSwgInd0IikpIHsKICAgICAgICAgICAgICAgICAgICBpZiAob3V0ID09IG51bGwpIHRocm93IG5ldyBFeGNlcHRpb24oIlNlbSBhY2Vzc28gYW8gYXJxdWl2byIpOwogICAgICAgICAgICAgICAgICAgIG91dC53cml0ZShwZW5kaW5nQmFja3VwSnNvbi5nZXRCeXRlcyhTdGFuZGFyZENoYXJzZXRzLlVURl84KSk7CiAgICAgICAgICAgICAgICAgICAgb3V0LmZsdXNoKCk7CiAgICAgICAgICAgICAgICAgICAgc2VuZEJhY2t1cEV4cG9ydGVkKCk7CiAgICAgICAgICAgICAgICB9IGNhdGNoIChFeGNlcHRpb24gZSkgewogICAgICAgICAgICAgICAgICAgIHNlbmRCYWNrdXBFcnJvcigiTsOjbyBmb2kgcG9zc8OtdmVsIHNhbHZhciBvIGJhY2t1cC4iKTsKICAgICAgICAgICAgICAgIH0gZmluYWxseSB7CiAgICAgICAgICAgICAgICAgICAgcGVuZGluZ0JhY2t1cEpzb24gPSBudWxsOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9IGVsc2UgewogICAgICAgICAgICAgICAgcGVuZGluZ0JhY2t1cEpzb24gPSBudWxsOwogICAgICAgICAgICB9CiAgICAgICAgICAgIHJldHVybjsKICAgICAgICB9CgogICAgICAgIGlmIChyZXF1ZXN0Q29kZSA9PSBCQUNLVVBfSU1QT1JUX1JFUVVFU1QpIHsKICAgICAgICAgICAgaWYgKHJlc3VsdENvZGUgPT0gUkVTVUxUX09LICYmIGRhdGEgIT0gbnVsbCAmJiBkYXRhLmdldERhdGEoKSAhPSBudWxsKSB7CiAgICAgICAgICAgICAgICBVcmkgdXJpID0gZGF0YS5nZXREYXRhKCk7CiAgICAgICAgICAgICAgICB0cnkgKElucHV0U3RyZWFtIGluID0gZ2V0Q29udGVudFJlc29sdmVyKCkub3BlbklucHV0U3RyZWFtKHVyaSk7CiAgICAgICAgICAgICAgICAgICAgIEJ5dGVBcnJheU91dHB1dFN0cmVhbSBidWZmZXIgPSBuZXcgQnl0ZUFycmF5T3V0cHV0U3RyZWFtKCkpIHsKICAgICAgICAgICAgICAgICAgICBpZiAoaW4gPT0gbnVsbCkgdGhyb3cgbmV3IEV4Y2VwdGlvbigiU2VtIGFjZXNzbyBhbyBhcnF1aXZvIik7CiAgICAgICAgICAgICAgICAgICAgYnl0ZVtdIGNodW5rID0gbmV3IGJ5dGVbODE5Ml07CiAgICAgICAgICAgICAgICAgICAgaW50IG47CiAgICAgICAgICAgICAgICAgICAgd2hpbGUgKChuID0gaW4ucmVhZChjaHVuaykpICE9IC0xKSBidWZmZXIud3JpdGUoY2h1bmssIDAsIG4pOwogICAgICAgICAgICAgICAgICAgIFN0cmluZyBqc29uID0gYnVmZmVyLnRvU3RyaW5nKFN0YW5kYXJkQ2hhcnNldHMuVVRGXzgubmFtZSgpKTsKICAgICAgICAgICAgICAgICAgICBzZW5kQmFja3VwSW1wb3J0ZWQoanNvbik7CiAgICAgICAgICAgICAgICB9IGNhdGNoIChFeGNlcHRpb24gZSkgewogICAgICAgICAgICAgICAgICAgIHNlbmRCYWNrdXBFcnJvcigiTsOjbyBmb2kgcG9zc8OtdmVsIGxlciBlc3RlIGJhY2t1cC4iKTsKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgfQogICAgICAgICAgICByZXR1cm47CiAgICAgICAgfQoKICAgICAgICBpZiAocmVxdWVzdENvZGUgIT0gVk9JQ0VfUkVRVUVTVCkgcmV0dXJuOwoKICAgICAgICBpZiAocmVzdWx0Q29kZSA9PSBSRVNVTFRfT0sgJiYgZGF0YSAhPSBudWxsKSB7CiAgICAgICAgICAgIEFycmF5TGlzdDxTdHJpbmc+IHJlc3VsdHMgPSBkYXRhLmdldFN0cmluZ0FycmF5TGlzdEV4dHJhKFJlY29nbml6ZXJJbnRlbnQuRVhUUkFfUkVTVUxUUyk7CiAgICAgICAgICAgIGlmIChyZXN1bHRzICE9IG51bGwgJiYgIXJlc3VsdHMuaXNFbXB0eSgpKSB7CiAgICAgICAgICAgICAgICBzZW5kVm9pY2VSZXN1bHQocmVzdWx0cy5nZXQoMCkpOwogICAgICAgICAgICAgICAgcmV0dXJuOwogICAgICAgICAgICB9CiAgICAgICAgfQogICAgICAgIHNlbmRWb2ljZUVycm9yKCJOw6NvIGNvbnNlZ3VpIG91dmlyLiBUb3F1ZSBubyBtaWNyb2ZvbmUgZSB0ZW50ZSBub3ZhbWVudGUuIik7CiAgICB9CgogICAgcHJpdmF0ZSB2b2lkIHNlbmRCYWNrdXBFeHBvcnRlZCgpIHsKICAgICAgICBpZiAod2ViVmlldyA9PSBudWxsKSByZXR1cm47CiAgICAgICAgcnVuT25VaVRocmVhZCgoKSAtPiB3ZWJWaWV3LmV2YWx1YXRlSmF2YXNjcmlwdCgKICAgICAgICAgICAgICAgICJ3aW5kb3cub25OYXRpdmVCYWNrdXBFeHBvcnRlZCAmJiB3aW5kb3cub25OYXRpdmVCYWNrdXBFeHBvcnRlZCgpOyIsIG51bGwpKTsKICAgIH0KCiAgICBwcml2YXRlIHZvaWQgc2VuZEJhY2t1cEltcG9ydGVkKFN0cmluZyBqc29uKSB7CiAgICAgICAgaWYgKHdlYlZpZXcgPT0gbnVsbCkgcmV0dXJuOwogICAgICAgIFN0cmluZyBqcyA9ICJ3aW5kb3cub25OYXRpdmVCYWNrdXBJbXBvcnRlZCAmJiB3aW5kb3cub25OYXRpdmVCYWNrdXBJbXBvcnRlZCgiICsKICAgICAgICAgICAgICAgIEpTT05PYmplY3QucXVvdGUoanNvbikgKyAiKTsiOwogICAgICAgIHJ1bk9uVWlUaHJlYWQoKCkgLT4gd2ViVmlldy5ldmFsdWF0ZUphdmFzY3JpcHQoanMsIG51bGwpKTsKICAgIH0KCiAgICBwcml2YXRlIHZvaWQgc2VuZEJhY2t1cEVycm9yKFN0cmluZyBtZXNzYWdlKSB7CiAgICAgICAgaWYgKHdlYlZpZXcgPT0gbnVsbCkgcmV0dXJuOwogICAgICAgIFN0cmluZyBqcyA9ICJ3aW5kb3cub25OYXRpdmVCYWNrdXBFcnJvciAmJiB3aW5kb3cub25OYXRpdmVCYWNrdXBFcnJvcigiICsKICAgICAgICAgICAgICAgIEpTT05PYmplY3QucXVvdGUobWVzc2FnZSkgKyAiKTsiOwogICAgICAgIHJ1bk9uVWlUaHJlYWQoKCkgLT4gd2ViVmlldy5ldmFsdWF0ZUphdmFzY3JpcHQoanMsIG51bGwpKTsKICAgIH0KCiAgICBwcml2YXRlIHZvaWQgc2VuZFZvaWNlUmVzdWx0KFN0cmluZyB0ZXh0KSB7CiAgICAgICAgU3RyaW5nIGpzID0gIndpbmRvdy5vbk5hdGl2ZVZvaWNlUmVzdWx0ICYmIHdpbmRvdy5vbk5hdGl2ZVZvaWNlUmVzdWx0KCIgKyBKU09OT2JqZWN0LnF1b3RlKHRleHQpICsgIik7IjsKICAgICAgICB3ZWJWaWV3LmV2YWx1YXRlSmF2YXNjcmlwdChqcywgbnVsbCk7CiAgICB9CgogICAgcHJpdmF0ZSB2b2lkIHNlbmRWb2ljZUVycm9yKFN0cmluZyBtZXNzYWdlKSB7CiAgICAgICAgU3RyaW5nIGpzID0gIndpbmRvdy5vbk5hdGl2ZVZvaWNlRXJyb3IgJiYgd2luZG93Lm9uTmF0aXZlVm9pY2VFcnJvcigiICsgSlNPTk9iamVjdC5xdW90ZShtZXNzYWdlKSArICIpOyI7CiAgICAgICAgd2ViVmlldy5ldmFsdWF0ZUphdmFzY3JpcHQoanMsIG51bGwpOwogICAgfQoKICAgIEBPdmVycmlkZQogICAgcHVibGljIHZvaWQgb25CYWNrUHJlc3NlZCgpIHsKICAgICAgICBpZiAod2ViVmlldyAhPSBudWxsICYmIHdlYlZpZXcuY2FuR29CYWNrKCkpIHdlYlZpZXcuZ29CYWNrKCk7CiAgICAgICAgZWxzZSBzdXBlci5vbkJhY2tQcmVzc2VkKCk7CiAgICB9CgogICAgQE92ZXJyaWRlCiAgICBwcm90ZWN0ZWQgdm9pZCBvbkRlc3Ryb3koKSB7CiAgICAgICAgaWYgKHRleHRUb1NwZWVjaCAhPSBudWxsKSB7CiAgICAgICAgICAgIHRleHRUb1NwZWVjaC5zdG9wKCk7CiAgICAgICAgICAgIHRleHRUb1NwZWVjaC5zaHV0ZG93bigpOwogICAgICAgICAgICB0ZXh0VG9TcGVlY2ggPSBudWxsOwogICAgICAgIH0KICAgICAgICBpZiAod2ViVmlldyAhPSBudWxsKSB7CiAgICAgICAgICAgIHdlYlZpZXcucmVtb3ZlSmF2YXNjcmlwdEludGVyZmFjZSgiQW5kcm9pZFZvaWNlIik7CiAgICAgICAgICAgIHdlYlZpZXcuZGVzdHJveSgpOwogICAgICAgIH0KICAgICAgICBzdXBlci5vbkRlc3Ryb3koKTsKICAgIH0KfQo=
+package com.michael.meudinheiro;
+
+import android.Manifest;
+import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.ActivityNotFoundException;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import android.os.Bundle;
+import android.net.Uri;
+import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
+import android.webkit.JavascriptInterface;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.webkit.WebChromeClient;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+
+public class MainActivity extends Activity {
+    private static final int VOICE_REQUEST = 4017;
+    private static final int NOTIFICATION_REQUEST = 4018;
+    private static final int BACKUP_EXPORT_REQUEST = 4019;
+    private static final int BACKUP_IMPORT_REQUEST = 4020;
+    private static final String CHANNEL_ID = "vencimentos";
+    private static final String PREFS = "meu_dinheiro_reminders";
+    private static final String PREF_JSON = "reminders_json";
+    private static final String PREF_FIRED = "reminders_fired";
+
+    private WebView webView;
+    private TextToSpeech textToSpeech;
+    private boolean ttsReady = false;
+    private String pendingBackupJson = null;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        getWindow().setStatusBarColor(0xFF0D1016);
+        getWindow().setNavigationBarColor(0xFF0D1016);
+        getWindow().getDecorView().setSystemUiVisibility(0);
+
+        ensureNotificationChannel(this);
+
+        textToSpeech = new TextToSpeech(this, status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                int result = textToSpeech.setLanguage(new Locale("pt", "BR"));
+                ttsReady = result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED;
+                textToSpeech.setSpeechRate(1.0f);
+            }
+        });
+
+        webView = new WebView(this);
+        webView.setBackgroundColor(0xFF0D1016);
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
+        settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(false);
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        settings.setDisplayZoomControls(false);
+        settings.setMediaPlaybackRequiresUserGesture(true);
+
+        webView.setWebViewClient(new WebViewClient());
+        webView.setWebChromeClient(new WebChromeClient());
+        webView.addJavascriptInterface(new VoiceBridge(), "AndroidVoice");
+        setContentView(webView);
+        webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    public class VoiceBridge {
+        @JavascriptInterface
+        public void startListening() {
+            runOnUiThread(() -> {
+                Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "pt-BR");
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "pt-BR");
+                intent.putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false);
+                intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+                intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Fale um lançamento ou uma pergunta");
+                try {
+                    startActivityForResult(intent, VOICE_REQUEST);
+                } catch (ActivityNotFoundException e) {
+                    sendVoiceError("O reconhecimento de voz do Android não está disponível.");
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void speak(String text) {
+            if (text == null || text.trim().isEmpty()) return;
+            runOnUiThread(() -> {
+                if (ttsReady && textToSpeech != null) {
+                    textToSpeech.stop();
+                    textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "meu-dinheiro-resposta");
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void syncReminders(String json) {
+            if (json == null) return;
+            runOnUiThread(() -> MainActivity.syncReminders(MainActivity.this, json));
+        }
+
+        @JavascriptInterface
+        public void requestNotificationPermission() {
+            if (Build.VERSION.SDK_INT >= 33 &&
+                    checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                runOnUiThread(() -> requestPermissions(
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        NOTIFICATION_REQUEST
+                ));
+            }
+        }
+
+        @JavascriptInterface
+        public void exportBackup(String json) {
+            if (json == null || json.trim().isEmpty()) return;
+            pendingBackupJson = json;
+            runOnUiThread(() -> {
+                Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType("application/json");
+                intent.putExtra(Intent.EXTRA_TITLE, "MeuDinheiro-backup-" + LocalDate.now() + ".json");
+                try {
+                    startActivityForResult(intent, BACKUP_EXPORT_REQUEST);
+                } catch (Exception e) {
+                    sendBackupError("Não foi possível abrir o local para salvar o backup.");
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void importBackup() {
+            runOnUiThread(() -> {
+                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType("application/json");
+                try {
+                    startActivityForResult(intent, BACKUP_IMPORT_REQUEST);
+                } catch (Exception e) {
+                    sendBackupError("Não foi possível abrir o seletor de arquivos.");
+                }
+            });
+        }
+    }
+
+    private static void ensureNotificationChannel(Context context) {
+        if (Build.VERSION.SDK_INT >= 26) {
+            NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Vencimentos",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("Avisos de contas e faturas que vencem em 2 dias");
+            nm.createNotificationChannel(channel);
+        }
+    }
+
+    private static int reminderCode(String key) {
+        return key == null ? 1 : (key.hashCode() & 0x7fffffff);
+    }
+
+    private static PendingIntent reminderPendingIntent(Context context, JSONObject obj) {
+        String key = obj.optString("key", String.valueOf(System.currentTimeMillis()));
+        Intent intent = new Intent(context, ReminderReceiver.class);
+        intent.setAction("com.michael.meudinheiro.REMINDER." + key);
+        intent.putExtra("key", key);
+        intent.putExtra("title", obj.optString("title", "Meu Dinheiro"));
+        intent.putExtra("message", obj.optString("message", "Você tem um vencimento próximo."));
+        return PendingIntent.getBroadcast(
+                context,
+                reminderCode(key),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+    }
+
+    private static void cancelJson(Context context, String json) {
+        try {
+            JSONArray arr = new JSONArray(json == null ? "[]" : json);
+            AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject obj = arr.optJSONObject(i);
+                if (obj == null) continue;
+                am.cancel(reminderPendingIntent(context, obj));
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static void scheduleJson(Context context, String json) {
+        JSONArray arr;
+        try {
+            arr = new JSONArray(json == null ? "[]" : json);
+        } catch (Exception e) {
+            return;
+        }
+
+        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        Set<String> fired = prefs.getStringSet(PREF_FIRED, new HashSet<String>());
+        long nowMs = System.currentTimeMillis();
+        LocalDate today = LocalDate.now();
+
+        for (int i = 0; i < arr.length(); i++) {
+            try {
+                JSONObject obj = arr.optJSONObject(i);
+                if (obj == null) continue;
+
+                String dueText = obj.optString("dueDate", "");
+                if (dueText.isEmpty()) continue;
+
+                LocalDate dueDate = LocalDate.parse(dueText);
+                if (dueDate.isBefore(today)) continue;
+
+                LocalDate reminderDate = dueDate.minusDays(2);
+                LocalDateTime localDateTime = LocalDateTime.of(reminderDate, LocalTime.of(9, 0));
+                long trigger = localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+
+                if (trigger <= nowMs) {
+                    // O horário do aviso já passou (a conta vence em até 2 dias).
+                    // Avisa uma única vez, e não toda vez que o app abre ou salva algo.
+                    if (fired.contains(obj.optString("key", ""))) continue;
+                    trigger = nowMs + 5000L;
+                }
+
+                PendingIntent pi = reminderPendingIntent(context, obj);
+                if (Build.VERSION.SDK_INT >= 23) {
+                    am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pi);
+                } else {
+                    am.set(AlarmManager.RTC_WAKEUP, trigger, pi);
+                }
+            } catch (Exception ignored) {
+                // um lembrete com problema não impede os demais
+            }
+        }
+    }
+
+    private static void markFired(Context context, String key) {
+        if (key == null) return;
+        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        Set<String> updated = new HashSet<String>(prefs.getStringSet(PREF_FIRED, new HashSet<String>()));
+        updated.add(key);
+        prefs.edit().putStringSet(PREF_FIRED, updated).apply();
+    }
+
+    private static void pruneFired(SharedPreferences prefs, String json) {
+        try {
+            Set<String> fired = prefs.getStringSet(PREF_FIRED, null);
+            if (fired == null || fired.isEmpty()) return;
+            Set<String> keep = new HashSet<String>();
+            JSONArray arr = new JSONArray(json == null ? "[]" : json);
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject obj = arr.optJSONObject(i);
+                if (obj == null) continue;
+                String key = obj.optString("key", "");
+                if (fired.contains(key)) keep.add(key);
+            }
+            prefs.edit().putStringSet(PREF_FIRED, keep).apply();
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static void syncReminders(Context context, String json) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        String oldJson = prefs.getString(PREF_JSON, "[]");
+        cancelJson(context, oldJson);
+        pruneFired(prefs, json);
+        prefs.edit().putString(PREF_JSON, json).apply();
+        scheduleJson(context, json);
+    }
+
+    private static void rescheduleStored(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        scheduleJson(context, prefs.getString(PREF_JSON, "[]"));
+    }
+
+    public static class ReminderReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (Intent.ACTION_BOOT_COMPLETED.equals(action) || Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) {
+                rescheduleStored(context);
+                return;
+            }
+
+            if (Build.VERSION.SDK_INT >= 33 &&
+                    context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+
+            ensureNotificationChannel(context);
+
+            String key = intent.getStringExtra("key");
+            String title = intent.getStringExtra("title");
+            String message = intent.getStringExtra("message");
+
+            Intent openApp = new Intent(context, MainActivity.class);
+            openApp.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            PendingIntent contentIntent = PendingIntent.getActivity(
+                    context,
+                    reminderCode(key),
+                    openApp,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+
+            Notification.Builder builder = Build.VERSION.SDK_INT >= 26
+                    ? new Notification.Builder(context, CHANNEL_ID)
+                    : new Notification.Builder(context);
+
+            builder.setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle(title == null ? "Meu Dinheiro" : title)
+                    .setContentText(message == null ? "Você tem um vencimento próximo." : message)
+                    .setStyle(new Notification.BigTextStyle().bigText(message))
+                    .setAutoCancel(true)
+                    .setContentIntent(contentIntent)
+                    .setWhen(System.currentTimeMillis());
+
+            NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            nm.notify(reminderCode(key), builder.build());
+            markFired(context, key);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == BACKUP_EXPORT_REQUEST) {
+            if (resultCode == RESULT_OK && data != null && data.getData() != null && pendingBackupJson != null) {
+                Uri uri = data.getData();
+                try (OutputStream out = getContentResolver().openOutputStream(uri, "wt")) {
+                    if (out == null) throw new Exception("Sem acesso ao arquivo");
+                    out.write(pendingBackupJson.getBytes(StandardCharsets.UTF_8));
+                    out.flush();
+                    sendBackupExported();
+                } catch (Exception e) {
+                    sendBackupError("Não foi possível salvar o backup.");
+                } finally {
+                    pendingBackupJson = null;
+                }
+            } else {
+                pendingBackupJson = null;
+            }
+            return;
+        }
+
+        if (requestCode == BACKUP_IMPORT_REQUEST) {
+            if (resultCode == RESULT_OK && data != null && data.getData() != null) {
+                Uri uri = data.getData();
+                try (InputStream in = getContentResolver().openInputStream(uri);
+                     ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+                    if (in == null) throw new Exception("Sem acesso ao arquivo");
+                    byte[] chunk = new byte[8192];
+                    int n;
+                    while ((n = in.read(chunk)) != -1) buffer.write(chunk, 0, n);
+                    String json = buffer.toString(StandardCharsets.UTF_8.name());
+                    sendBackupImported(json);
+                } catch (Exception e) {
+                    sendBackupError("Não foi possível ler este backup.");
+                }
+            }
+            return;
+        }
+
+        if (requestCode != VOICE_REQUEST) return;
+
+        if (resultCode == RESULT_OK && data != null) {
+            ArrayList<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if (results != null && !results.isEmpty()) {
+                sendVoiceResult(results.get(0));
+                return;
+            }
+        }
+        sendVoiceError("Não consegui ouvir. Toque no microfone e tente novamente.");
+    }
+
+    private void sendBackupExported() {
+        if (webView == null) return;
+        runOnUiThread(() -> webView.evaluateJavascript(
+                "window.onNativeBackupExported && window.onNativeBackupExported();", null));
+    }
+
+    private void sendBackupImported(String json) {
+        if (webView == null) return;
+        String js = "window.onNativeBackupImported && window.onNativeBackupImported(" +
+                JSONObject.quote(json) + ");";
+        runOnUiThread(() -> webView.evaluateJavascript(js, null));
+    }
+
+    private void sendBackupError(String message) {
+        if (webView == null) return;
+        String js = "window.onNativeBackupError && window.onNativeBackupError(" +
+                JSONObject.quote(message) + ");";
+        runOnUiThread(() -> webView.evaluateJavascript(js, null));
+    }
+
+    private void sendVoiceResult(String text) {
+        String js = "window.onNativeVoiceResult && window.onNativeVoiceResult(" + JSONObject.quote(text) + ");";
+        webView.evaluateJavascript(js, null);
+    }
+
+    private void sendVoiceError(String message) {
+        String js = "window.onNativeVoiceError && window.onNativeVoiceError(" + JSONObject.quote(message) + ");";
+        webView.evaluateJavascript(js, null);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (webView == null) {
+            super.onBackPressed();
+            return;
+        }
+        // Voltar: 1) fecha a janela aberta, 2) volta para o Início, 3) só então sai do app.
+        String js = "(function(){var o=document.querySelector('.overlay.show');"
+                + "if(o){closeSheets();return 'handled';}"
+                + "var p=document.querySelector('.page.active');"
+                + "if(p&&p.id!=='home'){go('home');return 'handled';}"
+                + "return 'exit';})()";
+        webView.evaluateJavascript(js, value -> {
+            if (value == null || !value.contains("handled")) {
+                finish();
+            }
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (textToSpeech != null) {
+            textToSpeech.stop();
+            textToSpeech.shutdown();
+            textToSpeech = null;
+        }
+        if (webView != null) {
+            webView.removeJavascriptInterface("AndroidVoice");
+            webView.destroy();
+        }
+        super.onDestroy();
+    }
+}
