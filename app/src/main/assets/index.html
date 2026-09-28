@@ -65,7 +65,7 @@
       <div class="hero-label" id="summaryMonthLabel">Saldo previsto do mês</div>
       <div class="balance" id="balance">R$ 0,00</div>
       <div class="hero-row">
-        <div class="mini up"><span>Entradas</span><strong id="income">R$ 0,00</strong></div>
+        <div class="mini up"><span id="incomeLabel">Entradas</span><strong id="income">R$ 0,00</strong></div>
         <div class="mini down"><span>Saídas previstas</span><strong id="expense">R$ 0,00</strong></div>
       </div>
       <div id="summaryBreakdown" style="margin-top:12px;color:var(--muted);font-size:12px;line-height:1.45"></div>
@@ -159,7 +159,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.22 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.23 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -279,7 +279,7 @@
 
 <div class="overlay" id="receivablesOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
   <div class="handle"></div><h3 id="recvTitle">A receber</h3>
-  <p class="mini-note" style="margin-top:0">Cada recebimento registrado aqui vira uma entrada normal e entra no seu saldo.</p>
+  <p class="mini-note" style="margin-top:0">O valor que falta já entra no saldo previsto do mês. Quando você registra o recebimento, ele deixa de ser previsto e passa a valer como entrada de verdade — o total não muda, só some daqui.</p>
   <button class="save" style="margin-top:0" onclick="openReceivableEdit(null)">＋ Nova meta de recebimento</button>
   <div id="recvList" style="margin:10px 0"></div>
   <button class="ghost" onclick="closeSheets()">Fechar</button>
@@ -452,8 +452,8 @@ function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function setDashboardMonth(m){dashboardMonth=m;localStorage.setItem('md_dashboard_month',m);render()}
 function buildHomeMonths(){let el=document.getElementById('homeMonthStrip');if(!el)return;let now=new Date(),months=[];for(let i=-3;i<=6;i++){let d=new Date(now.getFullYear(),now.getMonth()+i,1),k=iso(d).slice(0,7);months.push(k)}if(!months.includes(dashboardMonth))months.push(dashboardMonth);months=[...new Set(months)].sort();el.innerHTML=months.map(k=>{let [y,m]=k.split('-').map(Number),d=new Date(y,m-1,1),label=d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','');return `<button class="pill${k===dashboardMonth?' active':''}" onclick="setDashboardMonth('${k}')">${label}</button>`}).join('');setTimeout(()=>el.querySelector('.active')?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}),0)}
 function render(){
-  let mk=dashboardMonth, tx=data.transactions.filter(x=>monthKey(x.date)===mk), inc=tx.filter(x=>x.type==='income').reduce((a,b)=>a+Number(b.value||0),0), variable=tx.filter(x=>x.type==='expense').reduce((a,b)=>a+Number(b.value||0),0), fix=data.fixed.filter(x=>x.active!==false).reduce((a,b)=>a+Number(b.value||0),0), cardsTotal=currentCardsTotal(mk), out=variable+fix+cardsTotal, saldo=inc-out;
-  document.getElementById('summaryMonthLabel').textContent=`Saldo previsto · ${monthLabel(mk)}`;document.getElementById('balance').textContent=brl(saldo);document.getElementById('income').textContent=brl(inc);document.getElementById('expense').textContent=brl(out);document.getElementById('summaryBreakdown').textContent=`Gastos ${brl(variable)}  •  Fixas ${brl(fix)}  •  Cartões ${brl(cardsTotal)}`;
+  let mk=dashboardMonth, tx=data.transactions.filter(x=>monthKey(x.date)===mk), incReal=tx.filter(x=>x.type==='income').reduce((a,b)=>a+Number(b.value||0),0), incPending=receivablesProjected(mk), inc=incReal+incPending, variable=tx.filter(x=>x.type==='expense').reduce((a,b)=>a+Number(b.value||0),0), fix=data.fixed.filter(x=>x.active!==false).reduce((a,b)=>a+Number(b.value||0),0), cardsTotal=currentCardsTotal(mk), out=variable+fix+cardsTotal, saldo=inc-out;
+  document.getElementById('summaryMonthLabel').textContent=`Saldo previsto · ${monthLabel(mk)}`;document.getElementById('balance').textContent=brl(saldo);document.getElementById('income').textContent=brl(inc);document.getElementById('incomeLabel').textContent=incPending>0.004?'Entradas previstas':'Entradas';document.getElementById('expense').textContent=brl(out);document.getElementById('summaryBreakdown').textContent=`Gastos ${brl(variable)}  •  Fixas ${brl(fix)}  •  Cartões ${brl(cardsTotal)}`+(incPending>0.004?`  •  A receber ${brl(incPending)}`:'');
   document.getElementById('homeCardTotal').textContent=`${brl(cardsTotal)} em faturas de ${monthLabel(mk)}`;document.getElementById('homeCardHint').textContent=data.cards.length?`${data.cards.length} cartão(ões) cadastrado(s).`:'Cadastre seus cartões e acompanhe cada fatura.';
   document.getElementById('fixedTotal').textContent=`${brl(fix)} em contas fixas`;document.getElementById('fixedHint').textContent=fix?`${data.fixed.length} compromisso(s) recorrente(s) por mês.`:'Cadastre suas despesas mensais recorrentes.';
   let p=inc?Math.min(100,Math.round(out/inc*100)):0;document.getElementById('ring').style.setProperty('--p',p+'%');document.getElementById('ringText').textContent=p+'%';
@@ -482,7 +482,7 @@ function financialAnswer(t){let n=normalizeText(t),mk=resolveQuestionMonth(t),la
 
 // ===== Relatórios, limites, metas e busca (v0.15) =====
 let moveQuery='',moveType='all',limitCat=null,editingGoalId=null,goalMoveState=null;
-function monthTotals(mk){let tx=data.transactions.filter(x=>monthKey(x.date||'')===mk),inc=tx.filter(x=>x.type==='income').reduce((a,b)=>a+Number(b.value||0),0),variable=tx.filter(x=>x.type==='expense').reduce((a,b)=>a+Number(b.value||0),0),fix=data.fixed.filter(x=>x.active!==false).reduce((a,b)=>a+Number(b.value||0),0),cards=currentCardsTotal(mk),out=variable+fix+cards;return{inc,variable,fix,cards,out,saldo:inc-out}}
+function monthTotals(mk){let tx=data.transactions.filter(x=>monthKey(x.date||'')===mk),inc=tx.filter(x=>x.type==='income').reduce((a,b)=>a+Number(b.value||0),0)+receivablesProjected(mk),variable=tx.filter(x=>x.type==='expense').reduce((a,b)=>a+Number(b.value||0),0),fix=data.fixed.filter(x=>x.active!==false).reduce((a,b)=>a+Number(b.value||0),0),cards=currentCardsTotal(mk),out=variable+fix+cards;return{inc,variable,fix,cards,out,saldo:inc-out}}
 function monthCatTotals(mk){let cats={},add=(c,v)=>{c=c||'Outros';cats[c]=(cats[c]||0)+Number(v||0)};data.transactions.filter(x=>x.type==='expense'&&monthKey(x.date||'')===mk).forEach(x=>add(x.category,x.value));data.fixed.filter(x=>x.active!==false).forEach(x=>add(x.category,x.value));data.cardItems.filter(x=>x.month===mk).forEach(x=>add(x.category,x.value));let base=data.cards.reduce((sum,c)=>sum+invoiceBase(c.id,mk),0);return{cats,base}}
 function limitWarning(cat,mk){let lim=Number(data.limits[cat]||0);if(!lim)return'';let pct=Math.round((monthCatTotals(mk).cats[cat]||0)/lim*100);return pct>=100?`⚠️ ${cat}: ${pct}% do limite`:pct>=80?`⚠️ ${cat}: ${pct}% do limite`:''}
 function shortMonth(k){let [y,m]=k.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}
@@ -525,7 +525,7 @@ function setMoveType(t){moveType=t;renderMoves()}
 function renderMoves(){
   let list=document.getElementById('allList');if(!list)return;
   let mk=dashboardMonth,all=moveEntries(mk);
-  document.getElementById('moveTitle').textContent=moveType==='expense'?'Gastos':moveType==='income'?'Receitas':'Movimentações';document.getElementById('moveAddBtn').textContent=moveType==='expense'?'+ Novo gasto':moveType==='income'?'+ Nova receita':'+ Novo';document.getElementById('moveRecvBtn').style.display=moveType==='income'?'block':'none';
+  document.getElementById('moveTitle').textContent=moveType==='expense'?'Gastos':moveType==='income'?'Receitas':'Movimentações';document.getElementById('moveAddBtn').textContent=moveType==='expense'?'+ Novo gasto':moveType==='income'?'+ Nova receita':'+ Novo';document.getElementById('moveRecvBtn').style.display=moveType==='income'?'block':'none';let recvPend=receivablesProjected(mk);document.getElementById('moveRecvBtn').textContent=recvPend>0.004?`💰 A receber este mês · faltam ${brl(recvPend)}`:'💰 A receber este mês';
   let rows=all.filter(x=>moveType==='all'||x.type===moveType).filter(x=>!moveQuery||normalizeText([x.desc,x.category,x.account||'',x.meta||'',String(x.value).replace('.',',')].join(' ')).includes(moveQuery)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id);
   document.getElementById('moveTypes').innerHTML=[['all','Todos'],['expense','Saídas'],['income','Entradas']].map(([k,l])=>`<button class="pill${moveType===k?' active':''}" onclick="setMoveType('${k}')">${l}</button>`).join('');
   let inc=rows.filter(x=>x.type==='income').reduce((a,b)=>a+Number(b.value||0),0),exp=rows.filter(x=>x.type==='expense').reduce((a,b)=>a+Number(b.value||0),0);
@@ -618,6 +618,7 @@ function openCatDetail(cat){
 // ===== Recebíveis (meta de recebimento por mês) v0.22 =====
 let editingReceivableId=null,payingReceivableId=null;
 function receivablesForMonth(mk){return data.receivables.filter(r=>r.month===mk)}
+function receivablesProjected(mk){return receivablesForMonth(mk).reduce((a,r)=>a+Math.max(0,Number(r.target||0)-receivableReceived(r.id)),0)}
 function receivableReceived(rid){return data.transactions.filter(x=>x.type==='income'&&x.receivableId===rid).reduce((a,b)=>a+Number(b.value||0),0)}
 function receivableHtml(r){let recv=receivableReceived(r.id),target=Number(r.target||0),pct=target?recv/target:0,done=target>0&&recv>=target,extra=recv-target,sub=done?(extra>0.004?`🎉 Completo · recebeu ${brl(extra)} a mais`:'🎉 Completo!'):`Faltam ${brl(target-recv)}`;return `<div class="goal"><div class="goal-top"><b>📥 ${esc(r.desc)}</b><span>${Math.round(pct*100)}%</span></div><div class="bar"><i class="${done?'ok':''}" style="width:${Math.min(100,pct*100)}%"></i></div><div class="cat-sub">${brl(recv)} de ${brl(target)} · ${sub}</div><div class="goal-actions"><button onclick="openReceivablePay(${r.id})">＋ Registrar</button><button onclick="openReceivableEdit(${r.id})">✏️</button><button class="idel-b" onclick="deleteReceivable(${r.id})">🗑</button></div></div>`}
 function renderReceivables(){let mk=dashboardMonth,list=receivablesForMonth(mk);document.getElementById('recvTitle').textContent=`A receber · ${monthLabel(mk)}`;document.getElementById('recvList').innerHTML=list.map(receivableHtml).join('')||`<div class="empty">Nenhuma meta de recebimento em ${monthLabel(mk)}.<br>Toque em "Nova meta" para criar (ex.: Salário do mês).</div>`}
