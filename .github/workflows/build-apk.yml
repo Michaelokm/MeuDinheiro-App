@@ -38,7 +38,7 @@ jobs:
           done
 
       - name: Configurar Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -55,13 +55,29 @@ jobs:
           yes | "$SDKMANAGER" --licenses > /dev/null || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Preparar assinatura fixa
+      - name: Preparar e conferir assinatura fixa
         shell: bash
         env:
-          KEYSTORE_B64: ${{ secrets.MD_KEYSTORE_BASE64 }}
+          KEY_A: ${{ secrets.MD_KEYSTORE_B64_A }}
+          KEY_B: ${{ secrets.MD_KEYSTORE_B64_B }}
+          KEY_C: ${{ secrets.MD_KEYSTORE_B64_C }}
         run: |
-          test -n "$KEYSTORE_B64" || (echo "MD_KEYSTORE_BASE64 não configurado" && exit 1)
-          echo "$KEYSTORE_B64" | base64 --decode > app/meudinheiro-release.jks
+          test -n "$KEY_A" || (echo "MD_KEYSTORE_B64_A não configurado" && exit 1)
+          test -n "$KEY_B" || (echo "MD_KEYSTORE_B64_B não configurado" && exit 1)
+          test -n "$KEY_C" || (echo "MD_KEYSTORE_B64_C não configurado" && exit 1)
+
+          printf '%s%s%s' "$KEY_A" "$KEY_B" "$KEY_C" | tr -d '\r\n ' | base64 --decode > app/meudinheiro-release.jks
+
+          EXPECTED="d438171044c3754e4ad9e335f68a89cc9061b196f603f31e00504ade6ec337db"
+          ACTUAL="$(sha256sum app/meudinheiro-release.jks | awk '{print $1}')"
+          echo "SHA256 recebido: $ACTUAL"
+
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "ERRO: a chave de assinatura chegou incompleta ou alterada."
+            exit 1
+          fi
+
+          echo "Chave de assinatura conferida com sucesso."
 
       - name: Compilar APK assinado
         env:
@@ -79,4 +95,5 @@ jobs:
         with:
           name: MeuDinheiro-APK
           path: MeuDinheiro-release.apk
+
           if-no-files-found: error
