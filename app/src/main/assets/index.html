@@ -38,6 +38,16 @@
     .paid-sub{color:#79d39f!important}
     .notify-note{font-size:12px;color:var(--muted);line-height:1.45;margin:8px 2px 0}
 
+    .cat-row{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:center;padding:14px;border-bottom:1px solid var(--line);cursor:pointer}.cat-row:last-child{border-bottom:0}.cat-row .icon{width:44px;height:44px;border-radius:15px;background:var(--card2);display:grid;place-items:center;font-size:20px}
+    .cat-top{display:flex;justify-content:space-between;gap:8px;font-size:14px}.cat-top b{font-weight:650}
+    .bar{height:8px;border-radius:99px;background:#252c38;overflow:hidden;margin:8px 0 5px}.bar i{display:block;height:100%;border-radius:99px;background:var(--blue)}.bar i.ok{background:var(--green)}.bar i.warn{background:var(--amber)}.bar i.over{background:var(--red)}
+    .cat-sub{font-size:12px;color:var(--muted);line-height:1.4}.cat-sub.over{color:#ff9da4}.cat-sub.warn{color:#f3d08a}
+    .trend{display:flex;align-items:flex-end;gap:10px;padding:18px 14px 6px}.tcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}.tbars{display:flex;align-items:flex-end;gap:3px;height:104px;justify-content:center}.tbars i{display:block;width:13px;border-radius:5px 5px 2px 2px}.tbars .in{background:var(--green)}.tbars .out{background:var(--red)}.tlab{font-size:10px;color:var(--muted)}
+    .tlegend{display:flex;gap:14px;padding:4px 14px 14px;font-size:11px;color:var(--muted)}.tlegend b{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px}
+    .goal{padding:14px;border-bottom:1px solid var(--line)}.goal:last-child{border-bottom:0}.goal-top{display:flex;justify-content:space-between;align-items:center;gap:8px}.goal-top b{font-weight:650}
+    .goal-actions{display:flex;gap:6px;margin-top:10px}.goal-actions button{flex:1;border:1px solid var(--line);background:#202735;color:#dfe7f1;border-radius:11px;padding:8px;font-size:12px;font-weight:700}.goal-actions .idel-b{flex:0 0 42px;color:#ff8d96}
+    .alertbox{display:none;margin:0 0 14px;padding:12px 14px;border-radius:16px;background:#2b2314;border:1px solid #5a4620;color:#f3d08a;font-size:13px;line-height:1.4;cursor:pointer}.alertbox.show{display:block}
+    .search{width:100%;padding:12px 14px;border-radius:14px;border:1px solid #2a3340;background:#11161e;color:#fff;outline:none;margin:12px 0 8px}
   </style>
 </head>
 <body>
@@ -58,6 +68,7 @@
       <div id="summaryBreakdown" style="margin-top:12px;color:var(--muted);font-size:12px;line-height:1.45"></div>
     </div>
     <div class="monthstrip" id="homeMonthStrip" style="margin:12px 0 14px"></div>
+    <div class="alertbox" id="limitAlert" onclick="go('plan')"></div>
     <div class="grid4">
       <button class="quick" onclick="openAdd('expense')"><span class="ico">💸</span><small>Gasto</small></button>
       <button class="quick" onclick="openAdd('income')"><span class="ico">💰</span><small>Receita</small></button>
@@ -66,6 +77,8 @@
     </div>
     <div class="section"><h2>Comprometido</h2><button onclick="go('fixed')">Ver contas fixas</button></div>
     <div class="card commit"><div class="ring" id="ring"><b id="ringText">0%</b></div><div><strong id="fixedTotal">R$ 0,00 em contas fixas</strong><p id="fixedHint">Cadastre suas despesas mensais recorrentes.</p></div></div>
+    <div class="section"><h2>Onde seu dinheiro vai</h2><button onclick="go('plan')">Ver relatório</button></div>
+    <div class="card" id="homeCats"></div>
     <div class="section"><h2>Cartões</h2><button onclick="go('cards')">Ver faturas</button></div>
     <div class="card credit-summary" onclick="go('cards')"><div class="left"><div class="ccico">💳</div><div><strong id="homeCardTotal">R$ 0,00 na fatura do mês</strong><p id="homeCardHint">Cadastre seus cartões e acompanhe cada fatura.</p></div></div><span>›</span></div>
     <div class="section"><h2>Últimos lançamentos</h2><button onclick="go('moves')">Ver todos</button></div>
@@ -75,6 +88,9 @@
   <section id="moves" class="page">
     <div class="section" style="margin-top:8px"><h2>Movimentações</h2><button onclick="openAdd('expense')">+ Novo</button></div>
     <div class="monthstrip" id="monthStrip"></div>
+    <input class="search" id="moveSearch" placeholder="🔍 Buscar por nome, categoria ou forma…" oninput="setMoveQuery(this.value)" />
+    <div class="monthstrip" id="moveTypes"></div>
+    <div class="notify-note" id="moveTotals"></div>
     <div class="card" style="margin-top:12px" id="allList"></div>
   </section>
 
@@ -88,9 +104,17 @@
   </section>
 
   <section id="plan" class="page">
-    <div class="section" style="margin-top:8px"><h2>Planejamento do mês</h2></div>
-    <div class="hero" style="margin-top:0"><div class="hero-label">Disponível depois das contas fixas</div><div class="balance" id="freeAfterFixed">R$ 0,00</div><div class="hero-row"><div class="mini"><span>Fixas</span><strong id="planFixed">R$ 0,00</strong></div><div class="mini"><span>Variáveis</span><strong id="planVariable">R$ 0,00</strong></div></div></div>
-    <div class="card" style="padding:16px"><b>Como usar</b><p style="color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:0">Cadastre primeiro suas receitas e contas fixas. O app mostra quanto sobra para gastos variáveis no mês. As contas fixas, gastos variáveis e faturas de cartão entram no cálculo do valor disponível. Metas e limites por categoria podem ser acrescentados depois.</p></div>
+    <div class="section" style="margin-top:8px"><h2>Planejamento e relatórios</h2></div>
+    <div class="monthstrip" id="planMonthStrip" style="margin-bottom:12px"></div>
+    <div class="hero" style="margin-top:0"><div class="hero-label">Saldo previsto do mês</div><div class="balance" id="freeAfterFixed">R$ 0,00</div><div class="hero-row"><div class="mini"><span>Fixas + cartões</span><strong id="planFixed">R$ 0,00</strong></div><div class="mini"><span>Gastos variáveis</span><strong id="planVariable">R$ 0,00</strong></div></div></div>
+    <div class="section"><h2>Gastos por categoria</h2></div>
+    <div class="card" id="catList"></div>
+    <p class="mini-note">Toque numa categoria para definir um limite mensal. Conta lançamentos, contas fixas e gastos de cartão. Quando chegar em 80% ou passar do limite, o app avisa.</p>
+    <div class="section"><h2>Entradas x saídas · 6 meses</h2></div>
+    <div class="card" id="trendCard"></div>
+    <div class="section"><h2>Metas</h2><button onclick="openGoal()">+ Meta</button></div>
+    <div class="card" id="goalList"></div>
+    <p class="mini-note">O dinheiro guardado nas metas é só um acompanhamento: não muda o saldo do mês.</p>
   </section>
 
 
@@ -126,7 +150,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.14 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas e pagamentos.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.15 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites e metas.</p>
   </section>
 
   <button class="fab" id="fab" onclick="openAdd('expense')">＋</button>
@@ -182,6 +206,8 @@
   <div class="money-input"><span>R$</span><input id="ciValue" inputmode="decimal" placeholder="0,00" /></div>
   <div class="field"><label>Descrição</label><input id="ciDesc" placeholder="Ex.: Combustível" /></div>
   <div class="row2"><div class="field"><label>Categoria</label><select id="ciCategory"></select></div><div class="field"><label>Data</label><input id="ciDate" type="date" /></div></div>
+  <div class="field"><label>Parcelas</label><input id="ciInstallments" type="number" min="1" max="48" value="1" inputmode="numeric" /></div>
+  <p class="mini-note">À vista: deixe 1. Parcelado: informe o valor TOTAL acima, ele é dividido entre as próximas faturas.</p>
   <button class="save" onclick="saveCardItem()">Adicionar à fatura</button><button class="ghost" onclick="closeSheets()">Cancelar</button>
 </div></div>
 
@@ -191,12 +217,36 @@
   <button class="save" id="voiceSave" style="display:none" onclick="confirmVoice()">Confirmar lançamento</button><button class="ghost" onclick="closeSheets()">Cancelar</button>
 </div></div>
 
+<div class="overlay" id="limitOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
+  <div class="handle"></div><h3 id="limitTitle">Limite mensal</h3>
+  <p class="mini-note" id="limitInfo"></p>
+  <div class="money-input"><span>R$</span><input id="limitValue" inputmode="decimal" placeholder="0,00" /></div>
+  <button class="save" onclick="saveLimit()">Salvar limite</button>
+  <button class="ghost" id="limitRemove" style="color:#ff858e" onclick="removeLimit()">Remover limite</button>
+  <button class="ghost" onclick="closeSheets()">Cancelar</button>
+</div></div>
+
+<div class="overlay" id="goalOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
+  <div class="handle"></div><h3 id="goalTitle">Nova meta</h3>
+  <div class="field"><label>Nome da meta</label><input id="gName" placeholder="Ex.: Reserva de emergência" /></div>
+  <div class="field"><label>Quanto quer juntar</label><div class="money-input"><span>R$</span><input id="gTarget" inputmode="decimal" placeholder="0,00" /></div></div>
+  <div class="row2"><div class="field"><label>Já guardado (R$)</label><input id="gSaved" inputmode="decimal" placeholder="0,00" /></div><div class="field"><label>Prazo (opcional)</label><input id="gDeadline" type="month" /></div></div>
+  <button class="save" onclick="saveGoal()">Salvar meta</button><button class="ghost" onclick="closeSheets()">Cancelar</button>
+</div></div>
+
+<div class="overlay" id="goalMoveOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
+  <div class="handle"></div><h3 id="gmTitle">Guardar na meta</h3>
+  <p class="mini-note" id="gmInfo"></p>
+  <div class="money-input"><span>R$</span><input id="gmValue" inputmode="decimal" placeholder="0,00" /></div>
+  <button class="save" onclick="saveGoalMove()">Confirmar</button><button class="ghost" onclick="closeSheets()">Cancelar</button>
+</div></div>
+
 <div class="toast" id="toast"></div>
 <script>
 const CATS_EXP=['Alimentação','Moradia','Transporte','Carro','Moto','Pensão','Seguros','Saúde','Lazer','Compras','Contas','Outros'];
 const CATS_INC=['Salário','Freelance','Reembolso','Venda','Rendimento','Outros'];
-let data=JSON.parse(localStorage.getItem('md_data')||'{"transactions":[],"fixed":[],"cards":[],"cardInvoices":[],"cardItems":[],"payments":[]}');
-if(!Array.isArray(data.transactions))data.transactions=[];if(!Array.isArray(data.fixed))data.fixed=[];if(!Array.isArray(data.cards))data.cards=[];if(!Array.isArray(data.cardInvoices))data.cardInvoices=[];if(!Array.isArray(data.cardItems))data.cardItems=[];if(!Array.isArray(data.payments))data.payments=[];
+let data=JSON.parse(localStorage.getItem('md_data')||'{"transactions":[],"fixed":[],"cards":[],"cardInvoices":[],"cardItems":[],"payments":[],"limits":{},"goals":[]}');
+if(!Array.isArray(data.transactions))data.transactions=[];if(!Array.isArray(data.fixed))data.fixed=[];if(!Array.isArray(data.cards))data.cards=[];if(!Array.isArray(data.cardInvoices))data.cardInvoices=[];if(!Array.isArray(data.cardItems))data.cardItems=[];if(!Array.isArray(data.payments))data.payments=[];if(!data.limits||typeof data.limits!=='object'||Array.isArray(data.limits))data.limits={};if(!Array.isArray(data.goals))data.goals=[];
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
 const brl=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const parseMoney=s=>{s=(s||'').toString().trim().replace(/R\$/gi,'').replace(/\s/g,'');if(!s)return 0;if(s.includes(',')){s=s.replace(/\./g,'').replace(',','.')}else if(/^\d{1,3}(\.\d{3})+$/.test(s)){s=s.replace(/\./g,'')}return Number(s)||0};
@@ -210,7 +260,7 @@ function openAdd(t='expense'){editingTransactionId=null;currentType=t;recurring=
 function openEditTransaction(id){let tx=data.transactions.find(x=>x.id===id);if(!tx)return;editingTransactionId=id;currentType=tx.type||'expense';recurring=false;setType(currentType);document.getElementById('transactionTitle').textContent='Editar lançamento';document.getElementById('transactionSaveButton').textContent='Salvar alterações';document.getElementById('transactionDeleteButton').style.display='block';document.getElementById('recurringRow').style.display='none';document.getElementById('value').value=Number(tx.value||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('desc').value=tx.desc||'';document.getElementById('date').value=tx.date||iso(new Date());document.getElementById('category').value=tx.category||document.getElementById('category').value;let account=document.getElementById('account');if(tx.account&&!Array.from(account.options).some(o=>o.value===tx.account)){let opt=document.createElement('option');opt.value=tx.account;opt.textContent=tx.account;account.appendChild(opt)}account.value=tx.account||'Pix';document.getElementById('addOverlay').classList.add('show')}
 function openFixed(){cats('expense',document.getElementById('fCategory'));document.getElementById('fValue').value='';document.getElementById('fDesc').value='';document.getElementById('fDay').value='';document.getElementById('fixedOverlay').classList.add('show')}
 function closeSheets(){document.querySelectorAll('.overlay').forEach(x=>x.classList.remove('show'))}
-function saveTransaction(){let value=parseMoney(document.getElementById('value').value),desc=document.getElementById('desc').value.trim();if(!value||!desc)return showToast('Preencha valor e descrição');let date=document.getElementById('date').value||iso(new Date()),category=document.getElementById('category').value,account=document.getElementById('account').value;if(editingTransactionId!==null){let tx=data.transactions.find(x=>x.id===editingTransactionId);if(!tx)return showToast('Lançamento não encontrado');tx.type=currentType;tx.value=value;tx.desc=desc;tx.category=category;tx.date=date;tx.account=account;dashboardMonth=monthKey(date);localStorage.setItem('md_dashboard_month',dashboardMonth);editingTransactionId=null;save();closeSheets();showToast('Lançamento atualizado');return}dashboardMonth=monthKey(date);localStorage.setItem('md_dashboard_month',dashboardMonth);if(recurring&&currentType==='expense'){let day=Number(date.slice(8,10));data.fixed.push({id:Date.now(),value,desc,category,day,active:true});save();closeSheets();showToast('Conta fixa mensal criada');return}data.transactions.push({id:Date.now(),type:currentType,value,desc,category,date,account});save();closeSheets();showToast('Lançamento salvo')}
+function saveTransaction(){let value=parseMoney(document.getElementById('value').value),desc=document.getElementById('desc').value.trim();if(!value||!desc)return showToast('Preencha valor e descrição');let date=document.getElementById('date').value||iso(new Date()),category=document.getElementById('category').value,account=document.getElementById('account').value;if(editingTransactionId!==null){let tx=data.transactions.find(x=>x.id===editingTransactionId);if(!tx)return showToast('Lançamento não encontrado');tx.type=currentType;tx.value=value;tx.desc=desc;tx.category=category;tx.date=date;tx.account=account;dashboardMonth=monthKey(date);localStorage.setItem('md_dashboard_month',dashboardMonth);editingTransactionId=null;save();closeSheets();showToast('Lançamento atualizado');return}dashboardMonth=monthKey(date);localStorage.setItem('md_dashboard_month',dashboardMonth);if(recurring&&currentType==='expense'){let day=Number(date.slice(8,10));data.fixed.push({id:Date.now(),value,desc,category,day,active:true});save();closeSheets();showToast('Conta fixa mensal criada');return}data.transactions.push({id:Date.now(),type:currentType,value,desc,category,date,account});save();closeSheets();showToast((currentType==='expense'&&limitWarning(category,monthKey(date)))||'Lançamento salvo')}
 function deleteTransaction(id){let tx=data.transactions.find(x=>x.id===id);if(!tx)return showToast('Lançamento não encontrado');if(confirm(`Excluir o lançamento "${tx.desc}" de ${brl(tx.value)}?`)){data.transactions=data.transactions.filter(x=>x.id!==id);if(editingTransactionId===id)editingTransactionId=null;save();closeSheets();showToast('Lançamento excluído')}}
 function deleteEditingTransaction(){if(editingTransactionId===null)return;deleteTransaction(editingTransactionId)}
 function saveFixed(){let value=parseMoney(document.getElementById('fValue').value),desc=document.getElementById('fDesc').value.trim(),day=Math.min(31,Math.max(1,Number(document.getElementById('fDay').value)));if(!value||!desc||!day)return showToast('Preencha os dados da conta');data.fixed.push({id:Date.now(),value,desc,category:document.getElementById('fCategory').value,day,active:true});save();closeSheets();showToast('Conta fixa adicionada')}
@@ -253,6 +303,7 @@ function syncNativeReminders(){
         ...data.cardItems.filter(x=>x.cardId===c.id).map(x=>x.month)
       ]);
       months.forEach(month=>{
+        if(month>monthPlus(todayMonth,5))return;
         let total=invoiceTotalFor(c.id,month);
         if(total<=0||isPaid('card',c.id,month))return;
         reminders.push({
@@ -281,12 +332,12 @@ function buildInvoiceMonths(){let el=document.getElementById('invoiceMonthStrip'
 function copyPreviousInvoice(){
   let c=selectedCard();if(!c)return showToast('Cadastre um cartão primeiro');
   let previous=monthPlus(currentInvoiceMonth,-1);
-  let prevBase=invoiceBase(c.id,previous),prevItems=invoiceItems(c.id,previous);
+  let prevBase=invoiceBase(c.id,previous),prevItems=invoiceItems(c.id,previous).filter(x=>!x.group);
   if(prevBase<=0&&!prevItems.length)return showToast(`A fatura de ${monthLabel(previous)} está vazia`);
-  let targetBase=invoiceBase(c.id,currentInvoiceMonth),targetItems=invoiceItems(c.id,currentInvoiceMonth);
+  let targetBase=invoiceBase(c.id,currentInvoiceMonth),targetItems=invoiceItems(c.id,currentInvoiceMonth).filter(x=>!x.group);
   if((targetBase>0||targetItems.length)&&!confirm(`A fatura de ${monthLabel(currentInvoiceMonth)} já possui valores. Substituir pela fatura de ${monthLabel(previous)}?`))return;
   data.cardInvoices=data.cardInvoices.filter(x=>!(x.cardId===c.id&&x.month===currentInvoiceMonth));
-  data.cardItems=data.cardItems.filter(x=>!(x.cardId===c.id&&x.month===currentInvoiceMonth));
+  data.cardItems=data.cardItems.filter(x=>!(x.cardId===c.id&&x.month===currentInvoiceMonth&&!x.group));
   data.payments=data.payments.filter(x=>!(x.kind==='card'&&x.itemId===c.id&&x.month===currentInvoiceMonth));
   let seed=Date.now();
   if(prevBase>0)data.cardInvoices.push({id:seed,cardId:c.id,month:currentInvoiceMonth,baseValue:prevBase});
@@ -313,9 +364,13 @@ function copyPreviousInvoice(){
 
 function openInvoiceBase(){let c=selectedCard();if(!c)return showToast('Cadastre um cartão primeiro');document.getElementById('invoiceBaseValue').value=invoiceBase(c.id,currentInvoiceMonth)?invoiceBase(c.id,currentInvoiceMonth).toFixed(2).replace('.',','):'';document.getElementById('invoiceBaseHelp').textContent=`${c.name} · fatura ${monthLabel(currentInvoiceMonth)}. Informe o valor que ela já possui antes dos novos gastos.`;document.getElementById('invoiceBaseOverlay').classList.add('show')}
 function saveInvoiceBase(){let c=selectedCard();if(!c)return;let value=parseMoney(document.getElementById('invoiceBaseValue').value);let x=data.cardInvoices.find(i=>i.cardId===c.id&&i.month===currentInvoiceMonth);if(x)x.baseValue=value;else data.cardInvoices.push({id:Date.now(),cardId:c.id,month:currentInvoiceMonth,baseValue:value});dashboardMonth=currentInvoiceMonth;localStorage.setItem('md_dashboard_month',dashboardMonth);save();closeSheets();showToast('Valor da fatura atualizado')}
-function openCardItem(){let c=selectedCard();if(!c)return showToast('Cadastre um cartão primeiro');cats('expense',document.getElementById('ciCategory'));document.getElementById('ciValue').value='';document.getElementById('ciDesc').value='';document.getElementById('ciDate').value=iso(new Date());document.getElementById('cardItemOverlay').classList.add('show')}
-function saveCardItem(){let c=selectedCard();if(!c)return;let value=parseMoney(document.getElementById('ciValue').value),desc=document.getElementById('ciDesc').value.trim();if(!value||!desc)return showToast('Preencha valor e descrição');data.cardItems.push({id:Date.now(),cardId:c.id,month:currentInvoiceMonth,value,desc,category:document.getElementById('ciCategory').value,date:document.getElementById('ciDate').value||iso(new Date())});dashboardMonth=currentInvoiceMonth;localStorage.setItem('md_dashboard_month',dashboardMonth);save();closeSheets();showToast('Gasto acrescentado à fatura')}
-function deleteCardItem(id){if(confirm('Remover este gasto da fatura?')){data.cardItems=data.cardItems.filter(x=>x.id!==id);save()}}
+function openCardItem(){let c=selectedCard();if(!c)return showToast('Cadastre um cartão primeiro');cats('expense',document.getElementById('ciCategory'));document.getElementById('ciValue').value='';document.getElementById('ciDesc').value='';document.getElementById('ciDate').value=iso(new Date());document.getElementById('ciInstallments').value=1;document.getElementById('cardItemOverlay').classList.add('show')}
+function saveCardItem(){let c=selectedCard();if(!c)return;let value=parseMoney(document.getElementById('ciValue').value),desc=document.getElementById('ciDesc').value.trim();if(!value||!desc)return showToast('Preencha valor e descrição');let category=document.getElementById('ciCategory').value,date=document.getElementById('ciDate').value||iso(new Date()),n=Math.round(Number(document.getElementById('ciInstallments').value)||1);n=Math.min(48,Math.max(1,n));dashboardMonth=currentInvoiceMonth;localStorage.setItem('md_dashboard_month',dashboardMonth);
+  if(n===1){data.cardItems.push({id:Date.now(),cardId:c.id,month:currentInvoiceMonth,value,desc,category,date});save();closeSheets();showToast(limitWarning(category,currentInvoiceMonth)||'Gasto acrescentado à fatura');return}
+  let group=Date.now(),cents=Math.round(value*100),base=Math.floor(cents/n),rest=cents-base*n,day=Number(date.slice(8,10))||1;
+  for(let i=0;i<n;i++){let month=monthPlus(currentInvoiceMonth,i);data.cardItems.push({id:group+i,cardId:c.id,month,value:(base+(i<rest?1:0))/100,desc:`${desc} (${i+1}/${n})`,category,date:i===0?date:dueDateForMonth(month,day),group,inst:i+1,instTotal:n})}
+  save();closeSheets();showToast(limitWarning(category,currentInvoiceMonth)||`${n}x de ${brl(base/100)} nas próximas faturas`)}
+function deleteCardItem(id){let it=data.cardItems.find(x=>x.id===id);if(!it)return;if(it.group){if(confirm('Essa compra é parcelada. Remover TODAS as parcelas? (Cancelar = escolher só esta)')){data.cardItems=data.cardItems.filter(x=>x.group!==it.group);save();showToast('Compra parcelada removida');return}if(confirm('Remover só esta parcela?')){data.cardItems=data.cardItems.filter(x=>x.id!==id);save()}return}if(confirm('Remover este gasto da fatura?')){data.cardItems=data.cardItems.filter(x=>x.id!==id);save()}}
 function deleteSelectedCard(){let c=selectedCard();if(!c)return;if(confirm(`Excluir o cartão ${c.name} e todas as faturas dele?`)){data.cards=data.cards.filter(x=>x.id!==c.id);data.cardInvoices=data.cardInvoices.filter(x=>x.cardId!==c.id);data.cardItems=data.cardItems.filter(x=>x.cardId!==c.id);currentCardId=data.cards[0]?.id||null;save();showToast('Cartão excluído')}}
 function monthLabel(k){let [y,m]=k.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}
 function renderCards(){let empty=document.getElementById('cardsEmpty'),content=document.getElementById('cardsContent');if(!empty||!content)return;if(!data.cards.length){empty.style.display='block';content.style.display='none';return}empty.style.display='none';content.style.display='block';if(!currentCardId||!data.cards.some(c=>c.id===currentCardId))currentCardId=data.cards[0].id;let c=selectedCard();document.getElementById('cardTabs').innerHTML=data.cards.map(x=>`<button class="card-chip${x.id===c.id?' active':''}" onclick="setCard(${x.id})">💳 ${esc(x.name)}</button>`).join('');document.getElementById('selectedCardName').textContent=c.name;document.getElementById('selectedCardMeta').textContent=`Vence dia ${c.dueDay}`;let total=invoiceTotalFor(c.id,currentInvoiceMonth),paid=isPaid('card',c.id,currentInvoiceMonth);document.getElementById('invoiceMonthLabel').textContent=`Fatura de ${monthLabel(currentInvoiceMonth)}`;document.getElementById('invoiceTotal').textContent=brl(total);document.getElementById('invoiceLimitInfo').textContent='Edite o valor atual ou acrescente novas compras abaixo.';document.getElementById('invoiceStatus').textContent=paid?`✓ ${paidLabel('card',c.id,currentInvoiceMonth)}`:`Pendente · vence dia ${c.dueDay}`;document.getElementById('invoiceStatus').classList.toggle('paid-sub',paid);let payBtn=document.getElementById('invoicePaidBtn');payBtn.textContent=paid?'↩ Desmarcar como paga':'✓ Marcar fatura como paga';payBtn.classList.toggle('paid-btn',paid);buildInvoiceMonths();let base=invoiceBase(c.id,currentInvoiceMonth),items=[...invoiceItems(c.id,currentInvoiceMonth)].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id),rows='';if(base>0)rows+=`<div class="invoice-item"><div class="ii">🧾</div><div><div class="ititle">Valor já acumulado</div><div class="isub">Base informada para esta fatura</div></div><b>${brl(base)}</b><span></span></div>`;rows+=items.map(x=>`<div class="invoice-item"><div class="ii">${icon(x.category)}</div><div><div class="ititle">${esc(x.desc)}</div><div class="isub">${esc(x.category)} · ${new Date((x.date||iso(new Date()))+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</div></div><b>${brl(x.value)}</b><button class="idel" onclick="deleteCardItem(${x.id})">×</button></div>`).join('');document.getElementById('invoiceList').innerHTML=rows||'<div class="empty">Nenhum valor nesta fatura ainda.<br>Defina o valor atual ou acrescente um gasto.</div>'}
@@ -332,10 +387,10 @@ function render(){
   document.getElementById('homeCardTotal').textContent=`${brl(cardsTotal)} em faturas de ${monthLabel(mk)}`;document.getElementById('homeCardHint').textContent=data.cards.length?`${data.cards.length} cartão(ões) cadastrado(s).`:'Cadastre seus cartões e acompanhe cada fatura.';
   document.getElementById('fixedTotal').textContent=`${brl(fix)} em contas fixas`;document.getElementById('fixedHint').textContent=fix?`${data.fixed.length} compromisso(s) recorrente(s) por mês.`:'Cadastre suas despesas mensais recorrentes.';
   let p=inc?Math.min(100,Math.round(out/inc*100)):0;document.getElementById('ring').style.setProperty('--p',p+'%');document.getElementById('ringText').textContent=p+'%';
-  let sorted=[...tx].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);document.getElementById('recentList').innerHTML=sorted.slice(0,5).map(txHtml).join('')||`<div class="empty">Nenhum lançamento em ${monthLabel(mk)}.<br>Use o botão de voz ou adicione manualmente.</div>`;document.getElementById('allList').innerHTML=sorted.map(txHtml).join('')||`<div class="empty">Nenhum lançamento em ${monthLabel(mk)}.</div>`;
+  let sorted=[...tx].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);document.getElementById('recentList').innerHTML=sorted.slice(0,5).map(txHtml).join('')||`<div class="empty">Nenhum lançamento em ${monthLabel(mk)}.<br>Use o botão de voz ou adicione manualmente.</div>`;renderMoves();
   document.getElementById('fixedSum').textContent=brl(fix);document.getElementById('fixedCount').textContent=data.fixed.length;document.getElementById('fixedList').innerHTML=data.fixed.sort((a,b)=>a.day-b.day).map(x=>{let paid=isPaid('fixed',x.id,mk);return `<div class="fixed-item"><div class="day"><div>dia<b>${x.day}</b></div></div><div><div class="title">${esc(x.desc)}</div><div class="sub${paid?' paid-sub':''}">${paid?'✓ '+paidLabel('fixed',x.id,mk):esc(x.category)+' · pendente em '+monthLabel(mk)}</div></div><div class="pay-actions"><b>${brl(x.value)}</b><button class="${paid?'paid-btn':'pay-btn'}" onclick="togglePaid('fixed',${x.id},'${mk}')">${paid?'↩ Pago':'✓ Marcar pago'}</button><button class="idel" onclick="deleteFixed(${x.id})">×</button></div></div>`}).join('')||'<div class="empty">Cadastre financiamento, pensão, seguros e outras contas que se repetem todo mês.</div>';
   document.getElementById('freeAfterFixed').textContent=brl(saldo);document.getElementById('planFixed').textContent=brl(fix+cardsTotal);document.getElementById('planVariable').textContent=brl(variable);
-  buildHomeMonths();buildMonths();renderCards();
+  buildHomeMonths();buildMonths();renderCards();renderPlan();renderHomeExtras();
 }
 function buildMonths(){let el=document.getElementById('monthStrip');if(!el)return;let now=new Date(),months=[];for(let i=-6;i<=3;i++){let d=new Date(now.getFullYear(),now.getMonth()+i,1),k=iso(d).slice(0,7);months.push(k)}if(!months.includes(dashboardMonth))months.push(dashboardMonth);months=[...new Set(months)].sort();el.innerHTML=months.map(k=>{let [y,m]=k.split('-').map(Number),d=new Date(y,m-1,1),label=d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','');return `<button class="pill${k===dashboardMonth?' active':''}" onclick="setDashboardMonth('${k}')">${label}</button>`}).join('');setTimeout(()=>el.querySelector('.active')?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}),0)}
 function go(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(p).classList.add('active');document.querySelectorAll('.nav[data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===p));document.getElementById('fab').style.display=['home','moves'].includes(p)?'block':'none';window.scrollTo(0,0)}
@@ -346,12 +401,63 @@ function speakText(t){try{if(window.AndroidVoice&&typeof window.AndroidVoice.spe
 function isFinancialQuestion(t){let n=normalizeText(t);return /\bquanto\b/.test(n)||/\bqual\b.*\bsaldo\b/.test(n)||/o que (eu )?(gastei|paguei|recebi)/.test(n)||/como (esta|ta).*\b(saldo|fatura|gasto)/.test(n)||/me (fala|diz|mostra).*(gastei|gastos|fatura|saldo|recebi|entrou)/.test(n)}
 function financialAnswer(t){let n=normalizeText(t),mk=resolveQuestionMonth(t),label=monthLabel(mk),tx=data.transactions.filter(x=>monthKey(x.date||'')===mk),expenses=tx.filter(x=>x.type==='expense'),income=tx.filter(x=>x.type==='income'),exp=expenses.reduce((a,b)=>a+Number(b.value||0),0),inc=income.reduce((a,b)=>a+Number(b.value||0),0),fixed=data.fixed.filter(x=>x.active!==false).reduce((a,b)=>a+Number(b.value||0),0),cardsTotal=data.cards.reduce((sum,c)=>sum+invoiceTotalFor(c.id,mk),0),cat=categoryFromQuestion(t);
   if(/fatura|cartao|credito/.test(n)){let card=data.cards.find(c=>n.includes(normalizeText(c.name)));if(card){let total=invoiceTotalFor(card.id,mk);return `A fatura do ${card.name}, em ${label}, está em ${brl(total)}.`}return data.cards.length?`As faturas dos seus cartões em ${label} somam ${brl(cardsTotal)}.`:`Você ainda não cadastrou nenhum cartão.`}
+  if(/limite|orcamento|teto/.test(n)&&cat&&Number(data.limits[cat])>0){let lim=Number(data.limits[cat]),spent=monthCatTotals(mk).cats[cat]||0,pct=Math.round(spent/lim*100);return spent>=lim?`Em ${label}, você gastou ${brl(spent)} em ${cat.toLowerCase()}, de um limite de ${brl(lim)}. Passou ${brl(spent-lim)} do limite.`:`Em ${label}, você gastou ${brl(spent)} em ${cat.toLowerCase()}, ${pct}% do limite de ${brl(lim)}. Ainda faltam ${brl(lim-spent)}.`}
   if(/conta fixa|contas fixas|fixos|recorrente/.test(n))return `Suas contas fixas cadastradas somam ${brl(fixed)} por mês.`;
   if(/saldo|disponivel|posso gastar|sobrou|sobra/.test(n)){let saldo=inc-exp-fixed-cardsTotal;return `Seu saldo previsto em ${label} é ${brl(saldo)}. Entraram ${brl(inc)}, saíram ${brl(exp)}, as contas fixas somam ${brl(fixed)} e as faturas somam ${brl(cardsTotal)}.`}
   if(/recebi|recebido|entrou|entradas|ganhei|renda/.test(n))return `Em ${label}, você registrou ${brl(inc)} de entradas.`;
   if(cat){let txCat=expenses.filter(x=>x.category===cat).reduce((a,b)=>a+Number(b.value||0),0),cardCat=data.cardItems.filter(x=>x.month===mk&&x.category===cat).reduce((a,b)=>a+Number(b.value||0),0),total=txCat+cardCat;return `Em ${label}, você registrou ${brl(total)} em ${cat.toLowerCase()}.`}
   if(/gastei|gasto|gastos|paguei|saida|saidas/.test(n)){return `Em ${label}, seus gastos lançados somam ${brl(exp)}. As faturas dos cartões estão em ${brl(cardsTotal)}. Somando gastos e faturas, são ${brl(exp+cardsTotal)}.`}
   return null
+}
+
+// ===== Relatórios, limites, metas e busca (v0.15) =====
+let moveQuery='',moveType='all',limitCat=null,editingGoalId=null,goalMoveState=null;
+function monthTotals(mk){let tx=data.transactions.filter(x=>monthKey(x.date||'')===mk),inc=tx.filter(x=>x.type==='income').reduce((a,b)=>a+Number(b.value||0),0),variable=tx.filter(x=>x.type==='expense').reduce((a,b)=>a+Number(b.value||0),0),fix=data.fixed.filter(x=>x.active!==false).reduce((a,b)=>a+Number(b.value||0),0),cards=currentCardsTotal(mk),out=variable+fix+cards;return{inc,variable,fix,cards,out,saldo:inc-out}}
+function monthCatTotals(mk){let cats={},add=(c,v)=>{c=c||'Outros';cats[c]=(cats[c]||0)+Number(v||0)};data.transactions.filter(x=>x.type==='expense'&&monthKey(x.date||'')===mk).forEach(x=>add(x.category,x.value));data.fixed.filter(x=>x.active!==false).forEach(x=>add(x.category,x.value));data.cardItems.filter(x=>x.month===mk).forEach(x=>add(x.category,x.value));let base=data.cards.reduce((sum,c)=>sum+invoiceBase(c.id,mk),0);return{cats,base}}
+function limitWarning(cat,mk){let lim=Number(data.limits[cat]||0);if(!lim)return'';let pct=Math.round((monthCatTotals(mk).cats[cat]||0)/lim*100);return pct>=100?`⚠️ ${cat}: ${pct}% do limite`:pct>=80?`⚠️ ${cat}: ${pct}% do limite`:''}
+function shortMonth(k){let [y,m]=k.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}
+function fillMonthStrip(id){let el=document.getElementById(id);if(!el)return;let now=new Date(),months=[];for(let i=-6;i<=6;i++){let d=new Date(now.getFullYear(),now.getMonth()+i,1);months.push(iso(d).slice(0,7))}if(!months.includes(dashboardMonth))months.push(dashboardMonth);months=[...new Set(months)].sort();el.innerHTML=months.map(k=>{let [y,m]=k.split('-').map(Number),label=new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','');return `<button class="pill${k===dashboardMonth?' active':''}" onclick="setDashboardMonth('${k}')">${label}</button>`}).join('');setTimeout(()=>el.querySelector('.active')?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}),0)}
+function catRowHtml(c,spent,out,limit){let lim=Number(limit||0),pct=lim?spent/lim:0,cls='',w=0,sub,subcls='';if(lim){cls=pct>=1?'over':pct>=.8?'warn':'ok';subcls=cls==='ok'?'':cls;w=Math.min(100,pct*100);sub=pct>=1?`Estourou ${brl(spent-lim)} · ${Math.round(pct*100)}% de ${brl(lim)}`:`${Math.round(pct*100)}% de ${brl(lim)} · faltam ${brl(lim-spent)}`}else{let share=out?spent/out*100:0;w=Math.min(100,share);sub=`${Math.round(share)}% das saídas · toque para definir limite`}return `<div class="cat-row" data-cat="${esc(c)}" onclick="openLimit(this.dataset.cat)"><div class="icon">${icon(c)}</div><div><div class="cat-top"><b>${esc(c)}</b><span>${brl(spent)}</span></div><div class="bar"><i class="${cls}" style="width:${w}%"></i></div><div class="cat-sub ${subcls}">${sub}</div></div></div>`}
+function renderPlan(){
+  let el=document.getElementById('catList');if(!el)return;
+  let mk=dashboardMonth,t=monthTotals(mk),ct=monthCatTotals(mk);
+  fillMonthStrip('planMonthStrip');
+  let names=[...new Set([...Object.keys(ct.cats),...Object.keys(data.limits)])].filter(c=>(ct.cats[c]||0)>0||Number(data.limits[c])>0).sort((a,b)=>(ct.cats[b]||0)-(ct.cats[a]||0));
+  let rows=names.map(c=>catRowHtml(c,ct.cats[c]||0,t.out,data.limits[c])).join('');
+  if(ct.base>0)rows+=`<div class="cat-row" style="cursor:default"><div class="icon">🧾</div><div><div class="cat-top"><b>Fatura (valor acumulado)</b><span>${brl(ct.base)}</span></div><div class="cat-sub">Valor base informado nos cartões, sem categoria</div></div></div>`;
+  el.innerHTML=rows||`<div class="empty">Sem gastos em ${monthLabel(mk)}.<br>Lance gastos para ver o relatório.</div>`;
+  let ms=[];for(let i=5;i>=0;i--)ms.push(monthPlus(mk,-i));
+  let rt=ms.map(k=>({k,...monthTotals(k)})),mx=Math.max(1,...rt.map(r=>Math.max(r.inc,r.out))),avg=rt.reduce((a,r)=>a+r.out,0)/rt.length;
+  document.getElementById('trendCard').innerHTML=`<div class="trend">${rt.map(r=>`<div class="tcol"><div class="tbars"><i class="in" style="height:${Math.max(2,Math.round(r.inc/mx*100))}px"></i><i class="out" style="height:${Math.max(2,Math.round(r.out/mx*100))}px"></i></div><div class="tlab">${shortMonth(r.k)}</div></div>`).join('')}</div><div class="tlegend"><span><b style="background:var(--green)"></b>Entradas</span><span><b style="background:var(--red)"></b>Saídas</span><span>Média de saídas: ${brl(avg)}</span></div>`;
+  document.getElementById('goalList').innerHTML=data.goals.map(goalHtml).join('')||`<div class="empty">Crie uma meta (viagem, reserva, moto…)<br>e acompanhe quanto já juntou.</div>`
+}
+function renderHomeExtras(){
+  let box=document.getElementById('homeCats');if(!box)return;
+  let mk=dashboardMonth,t=monthTotals(mk),ct=monthCatTotals(mk);
+  let names=Object.keys(ct.cats).filter(c=>ct.cats[c]>0).sort((a,b)=>ct.cats[b]-ct.cats[a]).slice(0,4);
+  box.innerHTML=names.map(c=>catRowHtml(c,ct.cats[c],t.out,data.limits[c])).join('')||`<div class="empty">Sem gastos em ${monthLabel(mk)}.</div>`;
+  let al=Object.entries(data.limits).filter(([c,l])=>Number(l)>0).map(([c,l])=>({c,pct:(ct.cats[c]||0)/Number(l)})).filter(x=>x.pct>=.8).sort((a,b)=>b.pct-a.pct),bar=document.getElementById('limitAlert');
+  if(al.length){bar.textContent=`⚠️ Limites: ${al.slice(0,3).map(x=>`${x.c} ${Math.round(x.pct*100)}%`).join(' · ')}. Toque para ver.`;bar.classList.add('show')}else bar.classList.remove('show')
+}
+function openLimit(cat){limitCat=cat;let lim=Number(data.limits[cat]||0),spent=monthCatTotals(dashboardMonth).cats[cat]||0;document.getElementById('limitTitle').textContent=`Limite mensal · ${cat}`;document.getElementById('limitInfo').textContent=`Em ${monthLabel(dashboardMonth)} você já gastou ${brl(spent)} em ${cat.toLowerCase()}. O limite vale para todos os meses.`;document.getElementById('limitValue').value=lim?lim.toFixed(2).replace('.',','):'';document.getElementById('limitRemove').style.display=lim?'block':'none';document.getElementById('limitOverlay').classList.add('show')}
+function saveLimit(){if(!limitCat)return;let v=parseMoney(document.getElementById('limitValue').value);if(v>0)data.limits[limitCat]=v;else delete data.limits[limitCat];save();closeSheets();showToast(v>0?'Limite salvo':'Limite removido')}
+function removeLimit(){if(!limitCat)return;delete data.limits[limitCat];save();closeSheets();showToast('Limite removido')}
+function goalHtml(g){let target=Number(g.target||0),saved=Number(g.saved||0),pct=target?saved/target:0,done=target>0&&saved>=target,sub=done?'🎉 Meta atingida!':`Faltam ${brl(target-saved)}`;if(!done&&g.deadline){let [y1,m1]=iso(new Date()).slice(0,7).split('-').map(Number),[y2,m2]=g.deadline.split('-').map(Number),left=(y2-y1)*12+(m2-m1);sub+=left>=1?` · guarde ${brl((target-saved)/left)}/mês até ${monthLabel(g.deadline)}`:` · prazo: ${monthLabel(g.deadline)}`}return `<div class="goal"><div class="goal-top"><b>🎯 ${esc(g.name)}</b><span>${Math.round(pct*100)}%</span></div><div class="bar"><i class="${done?'ok':''}" style="width:${Math.min(100,pct*100)}%"></i></div><div class="cat-sub">${brl(saved)} de ${brl(target)} · ${sub}</div><div class="goal-actions"><button onclick="openGoalMove(${g.id},1)">＋ Guardar</button><button onclick="openGoalMove(${g.id},-1)">− Retirar</button><button onclick="openGoal(${g.id})">✏️</button><button class="idel-b" onclick="deleteGoal(${g.id})">🗑</button></div></div>`}
+function openGoal(id){editingGoalId=id||null;let g=id?data.goals.find(x=>x.id===id):null;document.getElementById('goalTitle').textContent=g?'Editar meta':'Nova meta';document.getElementById('gName').value=g?g.name:'';document.getElementById('gTarget').value=g&&g.target?Number(g.target).toFixed(2).replace('.',','):'';document.getElementById('gSaved').value=g&&g.saved?Number(g.saved).toFixed(2).replace('.',','):'';document.getElementById('gDeadline').value=g&&g.deadline?g.deadline:'';document.getElementById('goalOverlay').classList.add('show')}
+function saveGoal(){let name=document.getElementById('gName').value.trim(),target=parseMoney(document.getElementById('gTarget').value),saved=parseMoney(document.getElementById('gSaved').value),deadline=document.getElementById('gDeadline').value||'';if(!name||!target)return showToast('Informe nome e valor da meta');if(editingGoalId){let g=data.goals.find(x=>x.id===editingGoalId);if(g){g.name=name;g.target=target;g.saved=saved;g.deadline=deadline}}else data.goals.push({id:Date.now(),name,target,saved,deadline});editingGoalId=null;save();closeSheets();showToast('Meta salva')}
+function deleteGoal(id){let g=data.goals.find(x=>x.id===id);if(!g)return;if(confirm(`Excluir a meta "${g.name}"?`)){data.goals=data.goals.filter(x=>x.id!==id);save();showToast('Meta excluída')}}
+function openGoalMove(id,sign){let g=data.goals.find(x=>x.id===id);if(!g)return;goalMoveState={id,sign};document.getElementById('gmTitle').textContent=sign>0?'Guardar na meta':'Retirar da meta';document.getElementById('gmInfo').textContent=`${g.name} · guardado: ${brl(g.saved)} de ${brl(g.target)}`;document.getElementById('gmValue').value='';document.getElementById('goalMoveOverlay').classList.add('show')}
+function saveGoalMove(){if(!goalMoveState)return;let g=data.goals.find(x=>x.id===goalMoveState.id),v=parseMoney(document.getElementById('gmValue').value);if(!g||!v)return showToast('Informe um valor');let was=Number(g.saved||0)>=Number(g.target||0);g.saved=Math.max(0,Number(g.saved||0)+goalMoveState.sign*v);let msg=goalMoveState.sign>0?'Valor guardado':'Valor retirado';if(!was&&g.saved>=g.target)msg='🎉 Meta atingida!';goalMoveState=null;save();closeSheets();showToast(msg)}
+function setMoveQuery(v){moveQuery=normalizeText(v);renderMoves()}
+function setMoveType(t){moveType=t;renderMoves()}
+function renderMoves(){
+  let list=document.getElementById('allList');if(!list)return;
+  let mk=dashboardMonth,all=data.transactions.filter(x=>monthKey(x.date||'')===mk);
+  let rows=all.filter(x=>moveType==='all'||x.type===moveType).filter(x=>!moveQuery||normalizeText([x.desc,x.category,x.account,String(x.value).replace('.',',')].join(' ')).includes(moveQuery)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id);
+  document.getElementById('moveTypes').innerHTML=[['all','Todos'],['expense','Saídas'],['income','Entradas']].map(([k,l])=>`<button class="pill${moveType===k?' active':''}" onclick="setMoveType('${k}')">${l}</button>`).join('');
+  let inc=rows.filter(x=>x.type==='income').reduce((a,b)=>a+Number(b.value||0),0),exp=rows.filter(x=>x.type==='expense').reduce((a,b)=>a+Number(b.value||0),0);
+  document.getElementById('moveTotals').textContent=all.length?`${rows.length} lançamento(s) · Entradas ${brl(inc)} · Saídas ${brl(exp)}`:'';
+  list.innerHTML=rows.map(txHtml).join('')||(all.length?`<div class="empty">Nada encontrado com esse filtro.</div>`:`<div class="empty">Nenhum lançamento em ${monthLabel(mk)}.</div>`)
 }
 function openVoice(){voiceDraft=null;document.getElementById('voiceSave').style.display='none';document.getElementById('transcript').textContent='Ex.: “Gastei 87 reais no supermercado” ou “quanto gastei este mês?”';document.getElementById('voiceStatus').textContent='Toque e fale um lançamento ou uma pergunta.';document.getElementById('voiceOverlay').classList.add('show')}
 function applyVoiceText(t){let btn=document.getElementById('micBtn');btn.classList.remove('listening');document.getElementById('transcript').textContent=t;if(isFinancialQuestion(t)){let answer=financialAnswer(t);voiceDraft=null;document.getElementById('voiceSave').style.display='none';if(answer){document.getElementById('voiceStatus').textContent=answer;document.getElementById('transcript').textContent=`Você: ${t}\n\nMeu Dinheiro: ${answer}`;speakText(answer)}else document.getElementById('voiceStatus').textContent='Ainda não consegui responder essa pergunta.';return}voiceDraft=parseVoice(t);document.getElementById('voiceStatus').textContent=voiceDraft?`Entendi: ${voiceDraft.type==='income'?'entrada':'saída'} de ${brl(voiceDraft.value)}.`:'Não consegui entender. Tente fazer um lançamento ou uma pergunta sobre seus gastos.';document.getElementById('voiceSave').style.display=voiceDraft?'block':'none'}
@@ -360,7 +466,7 @@ window.onNativeVoiceError=msg=>{document.getElementById('micBtn').classList.remo
 function startVoice(){let btn=document.getElementById('micBtn');btn.classList.add('listening');document.getElementById('voiceStatus').textContent='Ouvindo...';if(window.AndroidVoice&&typeof window.AndroidVoice.startListening==='function'){window.AndroidVoice.startListening();return}let SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){btn.classList.remove('listening');document.getElementById('voiceStatus').textContent='Reconhecimento de voz não disponível neste aparelho.';document.getElementById('transcript').innerHTML='<input id="voiceText" style="width:100%;background:transparent;border:0;outline:0;color:white" placeholder="Digite um lançamento ou uma pergunta">';document.getElementById('voiceSave').style.display='block';voiceDraft={manual:true};return}let r=new SR();r.lang='pt-BR';r.interimResults=false;r.maxAlternatives=1;r.onresult=e=>applyVoiceText(e.results[0][0].transcript);r.onerror=()=>window.onNativeVoiceError('Não consegui ouvir. Tente novamente.');r.onend=()=>btn.classList.remove('listening');r.start()}
 function wordsToNumber(t){let map={um:1,uma:1,dois:2,duas:2,tres:3,três:3,quatro:4,cinco:5,seis:6,sete:7,oito:8,nove:9,dez:10,vinte:20,trinta:30,quarenta:40,cinquenta:50,cem:100,cento:100,mil:1000};let parts=t.toLowerCase().split(/\s+/),sum=0,cur=0,used=false;for(let p of parts){if(map[p]!=null){used=true;if(map[p]===1000){cur=Math.max(1,cur)*1000;sum+=cur;cur=0}else cur+=map[p]}}return used?sum+cur:0}
 function parseVoice(t){let s=t.toLowerCase().replace(/reais|real/g,'').trim(),sv=s.replace(/\b(vence\s+)?dia\s*\d{1,2}\b/g,' '),expVerb=/(gastei|paguei|comprei|\bpago\b|gasto|despesa|conta fixa)/.test(s),type=(!expVerb&&/(recebi|entrou|ganhei|sal[aá]rio|entrada)/.test(s))?'income':'expense';let recurring=/(fixa|fixo|todo m[eê]s|mensal)/.test(s);let m=sv.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)(?:\s*mil)?/i),value=0;if(m){value=parseMoney(m[1]);if(/mil/.test(sv.slice(m.index,m.index+m[0].length+5))&&value<10000)value*=1000}else value=wordsToNumber(sv);if(!value)return null;let cat='Outros';let tests=[['Alimentação',/mercado|supermercado|restaurante|lanche|comida|padaria/],['Carro',/carro|combust[ií]vel|gasolina|diesel|oficina/],['Moto',/moto/],['Pensão',/pens[aã]o/],['Seguros',/seguro/],['Moradia',/aluguel|condom[ií]nio|casa/],['Contas',/luz|energia|[aá]gua|internet|telefone/],['Saúde',/farm[aá]cia|m[eé]dico|sa[uú]de/],['Lazer',/cinema|\bbar\b|lazer|viagem/],['Transporte',/uber|t[aá]xi|[oô]nibus|passagem/],['Compras',/roupa|shopping|loja/],['Salário',/sal[aá]rio/]];for(let [c,re] of tests)if(re.test(s)){cat=c;break}if(type==='income'&&!CATS_INC.includes(cat))cat=/sal[aá]rio/.test(s)?'Salário':'Outros';let day=(s.match(/(?:dia|vence dia)\s*(\d{1,2})/)||[])[1];let when=new Date();if(/anteontem/.test(s))when.setDate(when.getDate()-2);else if(/ontem/.test(s))when.setDate(when.getDate()-1);let desc=sv.replace(/\b(gastei|paguei|comprei|recebi|ganhei|entrou|reais|real|hoje|anteontem|ontem|no pix|no cr[eé]dito|no d[eé]bito|todo m[eê]s|conta fixa|fixa|fixo|vence|vencimento)\b/g,' ').replace(/\d+[.,]?\d*(\s*mil\b)?/g,' ').replace(/\s+/g,' ').trim();desc=desc.replace(/^((de|do|da|dos|das|em|no|na|com|para|pra)\s+)+/,'').replace(/[\s,.;:-]+$/,'');if(!desc)desc=cat;let account=/pix/.test(s)?'Pix':/cr[eé]dito/.test(s)?'Crédito':/d[eé]bito/.test(s)?'Débito':/(em|no) dinheiro|dinheiro vivo/.test(s)?'Dinheiro':'Conta bancária';return{type,value,desc:desc.charAt(0).toUpperCase()+desc.slice(1),category:cat,date:iso(when),account,recurring,day:Number(day)||new Date().getDate()}}
-function confirmVoice(){if(voiceDraft?.manual){let t=document.getElementById('voiceText')?.value||'';voiceDraft=parseVoice(t);if(!voiceDraft)return showToast('Não consegui identificar o valor')}let v=voiceDraft;if(!v)return;dashboardMonth=monthKey(v.date);localStorage.setItem('md_dashboard_month',dashboardMonth);if(v.recurring&&v.type==='expense'){data.fixed.push({id:Date.now(),value:v.value,desc:v.desc,category:v.category,day:v.day,active:true});save();closeSheets();showToast('Conta fixa criada por voz');return}data.transactions.push({id:Date.now(),type:v.type,value:v.value,desc:v.desc,category:v.category,date:v.date,account:v.account});save();closeSheets();showToast('Lançamento por voz salvo')}
+function confirmVoice(){if(voiceDraft?.manual){let t=document.getElementById('voiceText')?.value||'';voiceDraft=parseVoice(t);if(!voiceDraft)return showToast('Não consegui identificar o valor')}let v=voiceDraft;if(!v)return;dashboardMonth=monthKey(v.date);localStorage.setItem('md_dashboard_month',dashboardMonth);if(v.recurring&&v.type==='expense'){data.fixed.push({id:Date.now(),value:v.value,desc:v.desc,category:v.category,day:v.day,active:true});save();closeSheets();showToast('Conta fixa criada por voz');return}data.transactions.push({id:Date.now(),type:v.type,value:v.value,desc:v.desc,category:v.category,date:v.date,account:v.account});save();closeSheets();showToast((v.type==='expense'&&limitWarning(v.category,monthKey(v.date)))||'Lançamento por voz salvo')}
 function normalizeBackupData(x){
   let source=(x&&x.data&&typeof x.data==='object')?x.data:x;
   if(!source||!Array.isArray(source.transactions)||!Array.isArray(source.fixed))throw new Error('backup inválido');
@@ -368,6 +474,8 @@ function normalizeBackupData(x){
   if(!Array.isArray(source.cardInvoices))source.cardInvoices=[];
   if(!Array.isArray(source.cardItems))source.cardItems=[];
   if(!Array.isArray(source.payments))source.payments=[];
+  if(!source.limits||typeof source.limits!=='object'||Array.isArray(source.limits))source.limits={};
+  if(!Array.isArray(source.goals))source.goals=[];
   return source
 }
 function exportData(){
@@ -422,8 +530,8 @@ function importData(e){
 window.onNativeBackupExported=function(){showToast('Backup salvo no aparelho')}
 window.onNativeBackupError=function(message){showToast(message||'Não foi possível concluir o backup')}
 window.onNativeBackupImported=function(raw){applyImportedBackup(raw)}
-function seedDemo(){if(!confirm('ATENÇÃO: isso SUBSTITUI todos os seus dados atuais por dados de exemplo. Se ainda não fez backup, cancele e exporte antes. Continuar?'))return;let y=iso(new Date()).slice(0,8);data={transactions:[{id:1,type:'income',value:6500,desc:'Salário',category:'Salário',date:y+'05',account:'Conta bancária'},{id:2,type:'expense',value:185.42,desc:'Supermercado',category:'Alimentação',date:y+'12',account:'Pix'},{id:3,type:'expense',value:220,desc:'Combustível',category:'Carro',date:y+'17',account:'Crédito'}],fixed:[{id:11,value:1450,desc:'Financiamento do carro',category:'Carro',day:10,active:true},{id:12,value:800,desc:'Pensão alimentícia',category:'Pensão',day:5,active:true},{id:13,value:165,desc:'Seguro do carro',category:'Seguros',day:18,active:true},{id:14,value:95,desc:'Seguro da moto',category:'Seguros',day:18,active:true}],cards:[{id:21,name:'Cartão principal',dueDay:10,limit:5000}],cardInvoices:[{id:22,cardId:21,month:y.slice(0,7),baseValue:640}],cardItems:[{id:23,cardId:21,month:y.slice(0,7),value:220,desc:'Combustível',category:'Carro',date:y+'17'}],payments:[]};currentCardId=21;save();go('home');showToast('Exemplo carregado')}
-function clearData(){if(confirm('Tem certeza? Isso apaga TODOS os dados deste aparelho (lançamentos, contas fixas, cartões e faturas). Só dá para recuperar com um backup.')){data={transactions:[],fixed:[],cards:[],cardInvoices:[],cardItems:[],payments:[]};currentCardId=null;save();showToast('Dados apagados')}}
+function seedDemo(){if(!confirm('ATENÇÃO: isso SUBSTITUI todos os seus dados atuais por dados de exemplo. Se ainda não fez backup, cancele e exporte antes. Continuar?'))return;let y=iso(new Date()).slice(0,8);data={transactions:[{id:1,type:'income',value:6500,desc:'Salário',category:'Salário',date:y+'05',account:'Conta bancária'},{id:2,type:'expense',value:185.42,desc:'Supermercado',category:'Alimentação',date:y+'12',account:'Pix'},{id:3,type:'expense',value:220,desc:'Combustível',category:'Carro',date:y+'17',account:'Crédito'}],fixed:[{id:11,value:1450,desc:'Financiamento do carro',category:'Carro',day:10,active:true},{id:12,value:800,desc:'Pensão alimentícia',category:'Pensão',day:5,active:true},{id:13,value:165,desc:'Seguro do carro',category:'Seguros',day:18,active:true},{id:14,value:95,desc:'Seguro da moto',category:'Seguros',day:18,active:true}],cards:[{id:21,name:'Cartão principal',dueDay:10,limit:5000}],cardInvoices:[{id:22,cardId:21,month:y.slice(0,7),baseValue:640}],cardItems:[{id:23,cardId:21,month:y.slice(0,7),value:220,desc:'Combustível',category:'Carro',date:y+'17'}],payments:[],limits:{'Alimentação':800,'Carro':600},goals:[{id:31,name:'Reserva de emergência',target:10000,saved:2500,deadline:''}]};currentCardId=21;save();go('home');showToast('Exemplo carregado')}
+function clearData(){if(confirm('Tem certeza? Isso apaga TODOS os dados deste aparelho (lançamentos, contas fixas, cartões e faturas). Só dá para recuperar com um backup.')){data={transactions:[],fixed:[],cards:[],cardInvoices:[],cardItems:[],payments:[],limits:{},goals:[]};currentCardId=null;save();showToast('Dados apagados')}}
 document.getElementById('today').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});cats('expense',document.getElementById('category'));cats('expense',document.getElementById('fCategory'));cats('expense',document.getElementById('ciCategory'));currentCardId=data.cards[0]?.id||null;render();setTimeout(()=>{syncNativeReminders();try{if(window.AndroidVoice&&typeof window.AndroidVoice.requestNotificationPermission==='function')window.AndroidVoice.requestNotificationPermission()}catch(e){}},900);
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
