@@ -82,6 +82,8 @@
     <div class="card commit"><div class="ring" id="ring"><b id="ringText">0%</b></div><div><strong id="fixedTotal">R$ 0,00 em contas fixas</strong><p id="fixedHint">Cadastre suas despesas mensais recorrentes.</p></div></div>
     <div class="section"><h2>Onde seu dinheiro vai</h2><button onclick="go('plan')">Ver relatório</button></div>
     <div class="card" id="homeCats"></div>
+    <div class="section" id="recvHomeSection" style="display:none"><h2>A receber</h2><button onclick="openReceivables()">Gerenciar</button></div>
+    <div class="card" id="recvHomeCard" style="display:none"></div>
     <div class="section"><h2>Cartões</h2><button onclick="go('cards')">Ver faturas</button></div>
     <div class="card credit-summary" onclick="go('cards')"><div class="left"><div class="ccico">💳</div><div><strong id="homeCardTotal">R$ 0,00 na fatura do mês</strong><p id="homeCardHint">Cadastre seus cartões e acompanhe cada fatura.</p></div></div><span>›</span></div>
     <div class="section"><h2>Últimos lançamentos</h2><button onclick="openMoves('all')">Ver todos</button></div>
@@ -91,6 +93,7 @@
   <section id="moves" class="page">
     <div class="section" style="margin-top:8px"><h2 id="moveTitle">Movimentações</h2><button id="moveAddBtn" onclick="openAdd(moveType==='income'?'income':'expense')">+ Novo</button></div>
     <p class="mini-note" style="margin-top:0">Toque em um lançamento para editar (valor, categoria, data…).</p>
+    <button class="linklike" id="moveRecvBtn" style="display:none" onclick="openReceivables()">💰 A receber este mês</button>
     <div class="monthstrip" id="monthStrip"></div>
     <input class="search" id="moveSearch" placeholder="🔍 Buscar por nome, categoria ou forma…" oninput="setMoveQuery(this.value)" />
     <div class="monthstrip" id="moveTypes"></div>
@@ -156,7 +159,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.21 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.22 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -274,12 +277,38 @@
   <button class="ghost" onclick="closeSheets()">Fechar</button>
 </div></div>
 
+<div class="overlay" id="receivablesOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
+  <div class="handle"></div><h3 id="recvTitle">A receber</h3>
+  <p class="mini-note" style="margin-top:0">Cada recebimento registrado aqui vira uma entrada normal e entra no seu saldo.</p>
+  <button class="save" style="margin-top:0" onclick="openReceivableEdit(null)">＋ Nova meta de recebimento</button>
+  <div id="recvList" style="margin:10px 0"></div>
+  <button class="ghost" onclick="closeSheets()">Fechar</button>
+</div></div>
+
+<div class="overlay" id="receivableEditOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
+  <div class="handle"></div><h3 id="rTitle">Nova meta de recebimento</h3>
+  <div class="field"><label>Descrição</label><input id="rDesc" placeholder="Ex.: Salário do mês" /></div>
+  <div class="field"><label>Categoria</label><select id="rCategory"></select></div>
+  <div class="field"><label>Valor total esperado neste mês</label><div class="money-input"><span>R$</span><input id="rTarget" inputmode="decimal" placeholder="0,00" /></div></div>
+  <button class="save" onclick="saveReceivableEdit()">Salvar meta</button>
+  <button class="ghost" onclick="backToReceivables()">Cancelar</button>
+</div></div>
+
+<div class="overlay" id="receivablePayOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
+  <div class="handle"></div><h3>Registrar recebimento</h3>
+  <p class="mini-note" id="rpInfo" style="margin-top:0"></p>
+  <div class="money-input"><span>R$</span><input id="rpValue" inputmode="decimal" placeholder="0,00" /></div>
+  <div class="row2"><div class="field"><label>Descrição (opcional)</label><input id="rpDesc" placeholder="Ex.: Por fora" /></div><div class="field"><label>Data</label><input id="rpDate" type="date" /></div></div>
+  <button class="save" onclick="saveReceivablePay()">Confirmar recebimento</button>
+  <button class="ghost" onclick="backToReceivables()">Cancelar</button>
+</div></div>
+
 <div class="toast" id="toast"></div>
 <script>
 const CATS_EXP=['Alimentação','Moradia','Transporte','Carro','Moto','Pensão','Seguros','Saúde','Educação','Lazer','Compras','Contas','Outros'];
 const CATS_INC=['Salário','Freelance','Reembolso','Venda','Rendimento','Outros'];
 let data=JSON.parse(localStorage.getItem('md_data')||'{"transactions":[],"fixed":[],"cards":[],"cardInvoices":[],"cardItems":[],"payments":[],"limits":{},"goals":[]}');
-if(!Array.isArray(data.transactions))data.transactions=[];if(!Array.isArray(data.fixed))data.fixed=[];if(!Array.isArray(data.cards))data.cards=[];if(!Array.isArray(data.cardInvoices))data.cardInvoices=[];if(!Array.isArray(data.cardItems))data.cardItems=[];if(!Array.isArray(data.payments))data.payments=[];if(!data.limits||typeof data.limits!=='object'||Array.isArray(data.limits))data.limits={};if(!Array.isArray(data.goals))data.goals=[];ensureCatsOn(data);
+if(!Array.isArray(data.transactions))data.transactions=[];if(!Array.isArray(data.fixed))data.fixed=[];if(!Array.isArray(data.cards))data.cards=[];if(!Array.isArray(data.cardInvoices))data.cardInvoices=[];if(!Array.isArray(data.cardItems))data.cardItems=[];if(!Array.isArray(data.payments))data.payments=[];if(!data.limits||typeof data.limits!=='object'||Array.isArray(data.limits))data.limits={};if(!Array.isArray(data.goals))data.goals=[];if(!Array.isArray(data.receivables))data.receivables=[];ensureCatsOn(data);
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
 const brl=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const parseMoney=s=>{s=(s||'').toString().trim().replace(/R\$/gi,'').replace(/\s/g,'');if(!s)return 0;if(s.includes(',')){s=s.replace(/\./g,'').replace(',','.')}else if(/^\d{1,3}(\.\d{3})+$/.test(s)){s=s.replace(/\./g,'')}return Number(s)||0};
@@ -418,7 +447,7 @@ function renderCards(){let empty=document.getElementById('cardsEmpty'),content=d
 function deleteFixed(id){if(confirm('Remover esta conta fixa?')){data.fixed=data.fixed.filter(x=>x.id!==id);save()}}
 function monthKey(d){return d.slice(0,7)}
 function icon(cat){let m={'Alimentação':'🛒','Moradia':'🏠','Transporte':'🚕','Carro':'🚗','Moto':'🏍️','Pensão':'👤','Seguros':'🛡️','Saúde':'❤️','Educação':'🎓','Lazer':'🎬','Compras':'🛍️','Contas':'🧾','Salário':'💼','Freelance':'💻','Reembolso':'↩️','Venda':'🏷️','Rendimento':'📈'};return (data.catIcons&&data.catIcons[cat])||m[cat]||'•'}
-function txHtml(x){let d=new Date(x.date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});return `<div class="tx" onclick="openEditTransaction(${x.id})" title="Toque para editar"><div class="icon">${icon(x.category)}</div><div><div class="name">${esc(x.desc)}</div><div class="meta">${esc(x.category)} · ${d}${x.account?' · '+esc(x.account):''} · toque para editar</div></div><div class="amount ${x.type}">${x.type==='expense'?'−':'+'} ${brl(x.value)}</div><button class="tdel" onclick="event.stopPropagation();deleteTransaction(${x.id})" aria-label="Excluir lançamento">🗑</button></div>`}
+function txHtml(x){let d=new Date(x.date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});return `<div class="tx" onclick="openEditTransaction(${x.id})" title="Toque para editar"><div class="icon">${icon(x.category)}</div><div><div class="name">${esc(x.desc)}</div><div class="meta">${esc(x.category)} · ${d}${x.account?' · '+esc(x.account):''}${x.receivableId?(' · 🎯 '+esc((data.receivables.find(r=>r.id===x.receivableId)||{}).desc||'Recebimento')):''} · toque para editar</div></div><div class="amount ${x.type}">${x.type==='expense'?'−':'+'} ${brl(x.value)}</div><button class="tdel" onclick="event.stopPropagation();deleteTransaction(${x.id})" aria-label="Excluir lançamento">🗑</button></div>`}
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function setDashboardMonth(m){dashboardMonth=m;localStorage.setItem('md_dashboard_month',m);render()}
 function buildHomeMonths(){let el=document.getElementById('homeMonthStrip');if(!el)return;let now=new Date(),months=[];for(let i=-3;i<=6;i++){let d=new Date(now.getFullYear(),now.getMonth()+i,1),k=iso(d).slice(0,7);months.push(k)}if(!months.includes(dashboardMonth))months.push(dashboardMonth);months=[...new Set(months)].sort();el.innerHTML=months.map(k=>{let [y,m]=k.split('-').map(Number),d=new Date(y,m-1,1),label=d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','');return `<button class="pill${k===dashboardMonth?' active':''}" onclick="setDashboardMonth('${k}')">${label}</button>`}).join('');setTimeout(()=>el.querySelector('.active')?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}),0)}
@@ -472,7 +501,7 @@ function renderPlan(){
   document.getElementById('trendCard').innerHTML=`<div class="trend">${rt.map(r=>`<div class="tcol"><div class="tbars"><i class="in" style="height:${Math.max(2,Math.round(r.inc/mx*100))}px"></i><i class="out" style="height:${Math.max(2,Math.round(r.out/mx*100))}px"></i></div><div class="tlab">${shortMonth(r.k)}</div></div>`).join('')}</div><div class="tlegend"><span><b style="background:var(--green)"></b>Entradas</span><span><b style="background:var(--red)"></b>Saídas</span><span>Média de saídas: ${brl(avg)}</span></div>`;
   document.getElementById('goalList').innerHTML=data.goals.map(goalHtml).join('')||`<div class="empty">Crie uma meta (viagem, reserva, moto…)<br>e acompanhe quanto já juntou.</div>`
 }
-function renderHomeExtras(){
+function renderHomeExtras(){let recvList=receivablesForMonth(dashboardMonth),recvSec=document.getElementById('recvHomeSection'),recvCard=document.getElementById('recvHomeCard');if(recvList.length){recvSec.style.display='flex';recvCard.style.display='block';recvCard.innerHTML=recvList.map(receivableHtml).join('')}else{recvSec.style.display='none';recvCard.style.display='none'}
   let box=document.getElementById('homeCats');if(!box)return;
   let mk=dashboardMonth,t=monthTotals(mk),ct=monthCatTotals(mk);
   let names=Object.keys(ct.cats).filter(c=>ct.cats[c]>0).sort((a,b)=>ct.cats[b]-ct.cats[a]).slice(0,4);
@@ -496,7 +525,7 @@ function setMoveType(t){moveType=t;renderMoves()}
 function renderMoves(){
   let list=document.getElementById('allList');if(!list)return;
   let mk=dashboardMonth,all=moveEntries(mk);
-  document.getElementById('moveTitle').textContent=moveType==='expense'?'Gastos':moveType==='income'?'Receitas':'Movimentações';document.getElementById('moveAddBtn').textContent=moveType==='expense'?'+ Novo gasto':moveType==='income'?'+ Nova receita':'+ Novo';
+  document.getElementById('moveTitle').textContent=moveType==='expense'?'Gastos':moveType==='income'?'Receitas':'Movimentações';document.getElementById('moveAddBtn').textContent=moveType==='expense'?'+ Novo gasto':moveType==='income'?'+ Nova receita':'+ Novo';document.getElementById('moveRecvBtn').style.display=moveType==='income'?'block':'none';
   let rows=all.filter(x=>moveType==='all'||x.type===moveType).filter(x=>!moveQuery||normalizeText([x.desc,x.category,x.account||'',x.meta||'',String(x.value).replace('.',',')].join(' ')).includes(moveQuery)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id);
   document.getElementById('moveTypes').innerHTML=[['all','Todos'],['expense','Saídas'],['income','Entradas']].map(([k,l])=>`<button class="pill${moveType===k?' active':''}" onclick="setMoveType('${k}')">${l}</button>`).join('');
   let inc=rows.filter(x=>x.type==='income').reduce((a,b)=>a+Number(b.value||0),0),exp=rows.filter(x=>x.type==='expense').reduce((a,b)=>a+Number(b.value||0),0);
@@ -564,7 +593,7 @@ function deleteCategory(type,name){
 let cdCat=null;
 function moveEntries(mk){
   let out=[];
-  data.transactions.filter(x=>monthKey(x.date||'')===mk).forEach(x=>out.push({kind:'tx',tx:x,id:x.id,date:x.date||mk+'-01',type:x.type,value:Number(x.value||0),desc:x.desc,category:x.category,account:x.account,meta:''}));
+  data.transactions.filter(x=>monthKey(x.date||'')===mk).forEach(x=>out.push({kind:'tx',tx:x,id:x.id,date:x.date||mk+'-01',type:x.type,value:Number(x.value||0),desc:x.desc,category:x.category,account:x.account,meta:x.receivableId?('🎯 '+((data.receivables.find(r=>r.id===x.receivableId)||{}).desc||'Recebimento')):''}));
   data.fixed.filter(x=>x.active!==false).forEach(x=>out.push({kind:'fixed',id:x.id,date:dueDateForMonth(mk,x.day),type:'expense',value:Number(x.value||0),desc:x.desc,category:x.category,meta:'🔁 Conta fixa · dia '+x.day+(isPaid('fixed',x.id,mk)?' · ✓ paga':'')}));
   data.cardItems.filter(x=>x.month===mk).forEach(x=>{let c=data.cards.find(k=>k.id===x.cardId);out.push({kind:'card',id:x.id,date:x.date||mk+'-01',type:'expense',value:Number(x.value||0),desc:x.desc,category:x.category,meta:'💳 '+(c?c.name:'Cartão')})});
   data.cards.forEach(c=>{let b=invoiceBase(c.id,mk);if(b>0)out.push({kind:'base',id:c.id,date:dueDateForMonth(mk,c.dueDay),type:'expense',value:b,desc:'Fatura '+c.name+' (valor acumulado)',category:'',meta:'🧾 Valor informado na fatura'})});
@@ -585,6 +614,20 @@ function openCatDetail(cat){
   document.getElementById('cdList').innerHTML=items.map(e=>entryRow(e,'closeSheets();')).join('')||'<div class="empty">Nenhum item nesta categoria neste mês.</div>';
   document.getElementById('catDetailOverlay').classList.add('show')
 }
+
+// ===== Recebíveis (meta de recebimento por mês) v0.22 =====
+let editingReceivableId=null,payingReceivableId=null;
+function receivablesForMonth(mk){return data.receivables.filter(r=>r.month===mk)}
+function receivableReceived(rid){return data.transactions.filter(x=>x.type==='income'&&x.receivableId===rid).reduce((a,b)=>a+Number(b.value||0),0)}
+function receivableHtml(r){let recv=receivableReceived(r.id),target=Number(r.target||0),pct=target?recv/target:0,done=target>0&&recv>=target,extra=recv-target,sub=done?(extra>0.004?`🎉 Completo · recebeu ${brl(extra)} a mais`:'🎉 Completo!'):`Faltam ${brl(target-recv)}`;return `<div class="goal"><div class="goal-top"><b>📥 ${esc(r.desc)}</b><span>${Math.round(pct*100)}%</span></div><div class="bar"><i class="${done?'ok':''}" style="width:${Math.min(100,pct*100)}%"></i></div><div class="cat-sub">${brl(recv)} de ${brl(target)} · ${sub}</div><div class="goal-actions"><button onclick="openReceivablePay(${r.id})">＋ Registrar</button><button onclick="openReceivableEdit(${r.id})">✏️</button><button class="idel-b" onclick="deleteReceivable(${r.id})">🗑</button></div></div>`}
+function renderReceivables(){let mk=dashboardMonth,list=receivablesForMonth(mk);document.getElementById('recvTitle').textContent=`A receber · ${monthLabel(mk)}`;document.getElementById('recvList').innerHTML=list.map(receivableHtml).join('')||`<div class="empty">Nenhuma meta de recebimento em ${monthLabel(mk)}.<br>Toque em "Nova meta" para criar (ex.: Salário do mês).</div>`}
+function openReceivables(){renderReceivables();document.getElementById('receivablesOverlay').classList.add('show')}
+function backToReceivables(){closeSheets();renderReceivables();document.getElementById('receivablesOverlay').classList.add('show')}
+function openReceivableEdit(id){editingReceivableId=id||null;let r=id?data.receivables.find(x=>x.id===id):null;cats('income',document.getElementById('rCategory'));document.getElementById('rTitle').textContent=r?'Editar meta de recebimento':'Nova meta de recebimento';document.getElementById('rDesc').value=r?r.desc:'Salário do mês';document.getElementById('rTarget').value=r&&r.target?Number(r.target).toFixed(2).replace('.',','):'';let sel=document.getElementById('rCategory'),cat=r?r.category:(data.cats.income.includes('Salário')?'Salário':data.cats.income[0]);sel.value=cat;sel.dataset.prev=cat;document.getElementById('receivableEditOverlay').classList.add('show')}
+function saveReceivableEdit(){let desc=document.getElementById('rDesc').value.trim(),target=parseMoney(document.getElementById('rTarget').value),category=document.getElementById('rCategory').value||'Salário';if(!desc||!target)return showToast('Informe nome e valor esperado');if(editingReceivableId){let r=data.receivables.find(x=>x.id===editingReceivableId);if(r){r.desc=desc;r.target=target;r.category=category}}else data.receivables.push({id:Date.now(),desc,target,category,month:dashboardMonth});editingReceivableId=null;save();backToReceivables();showToast('Meta salva')}
+function deleteReceivable(id){let r=data.receivables.find(x=>x.id===id);if(!r)return;let recv=receivableReceived(id),msg=recv>0?`Excluir "${r.desc}"? Os ${brl(recv)} já registrados continuam nas suas entradas, só deixam de contar pra essa meta.`:`Excluir a meta "${r.desc}"?`;if(!confirm(msg))return;data.transactions.forEach(x=>{if(x.receivableId===id)delete x.receivableId});data.receivables=data.receivables.filter(x=>x.id!==id);save();renderReceivables();showToast('Meta excluída')}
+function openReceivablePay(id){payingReceivableId=id;let r=data.receivables.find(x=>x.id===id);if(!r)return;let recv=receivableReceived(id),curMonth=iso(new Date()).slice(0,7);document.getElementById('rpInfo').textContent=`${r.desc} · recebido ${brl(recv)} de ${brl(r.target)}`;document.getElementById('rpValue').value='';document.getElementById('rpDesc').value='';document.getElementById('rpDate').value=r.month===curMonth?iso(new Date()):r.month+'-01';document.getElementById('receivablePayOverlay').classList.add('show')}
+function saveReceivablePay(){if(!payingReceivableId)return;let r=data.receivables.find(x=>x.id===payingReceivableId);if(!r)return closeSheets();let value=parseMoney(document.getElementById('rpValue').value);if(!value)return showToast('Informe o valor recebido');let desc=document.getElementById('rpDesc').value.trim()||r.desc,date=document.getElementById('rpDate').value||iso(new Date());data.transactions.push({id:Date.now(),type:'income',value,desc,category:r.category,date,account:'',receivableId:r.id});let rid=payingReceivableId;payingReceivableId=null;save();let recv=receivableReceived(rid);backToReceivables();showToast(recv>=r.target?'🎉 Meta de recebimento completa!':`Registrado! Faltam ${brl(r.target-recv)}`)}
 function openVoice(){voiceDraft=null;document.getElementById('voiceSave').style.display='none';document.getElementById('transcript').textContent='Ex.: “Gastei 87 reais no supermercado” ou “quanto gastei este mês?”';document.getElementById('voiceStatus').textContent='Toque e fale um lançamento ou uma pergunta.';document.getElementById('voiceOverlay').classList.add('show')}
 function applyVoiceText(t){let btn=document.getElementById('micBtn');btn.classList.remove('listening');document.getElementById('transcript').textContent=t;if(isFinancialQuestion(t)){let answer=financialAnswer(t);voiceDraft=null;document.getElementById('voiceSave').style.display='none';if(answer){document.getElementById('voiceStatus').textContent=answer;document.getElementById('transcript').textContent=`Você: ${t}\n\nMeu Dinheiro: ${answer}`;speakText(answer)}else document.getElementById('voiceStatus').textContent='Ainda não consegui responder essa pergunta.';return}voiceDraft=parseVoice(t);document.getElementById('voiceStatus').textContent=voiceDraft?`Entendi: ${voiceDraft.type==='income'?'entrada':'saída'} de ${brl(voiceDraft.value)}.`:'Não consegui entender. Tente fazer um lançamento ou uma pergunta sobre seus gastos.';document.getElementById('voiceSave').style.display=voiceDraft?'block':'none'}
 window.onNativeVoiceResult=t=>applyVoiceText(t);
@@ -602,6 +645,7 @@ function normalizeBackupData(x){
   if(!Array.isArray(source.payments))source.payments=[];
   if(!source.limits||typeof source.limits!=='object'||Array.isArray(source.limits))source.limits={};
   if(!Array.isArray(source.goals))source.goals=[];
+  if(!Array.isArray(source.receivables))source.receivables=[];
   ensureCatsOn(source);
   return source
 }
@@ -657,8 +701,8 @@ function importData(e){
 window.onNativeBackupExported=function(){showToast('Backup salvo no aparelho')}
 window.onNativeBackupError=function(message){showToast(message||'Não foi possível concluir o backup')}
 window.onNativeBackupImported=function(raw){applyImportedBackup(raw)}
-function seedDemo(){if(!confirm('ATENÇÃO: isso SUBSTITUI todos os seus dados atuais por dados de exemplo. Se ainda não fez backup, cancele e exporte antes. Continuar?'))return;let y=iso(new Date()).slice(0,8);data={transactions:[{id:1,type:'income',value:6500,desc:'Salário',category:'Salário',date:y+'05',account:'Conta bancária'},{id:2,type:'expense',value:185.42,desc:'Supermercado',category:'Alimentação',date:y+'12',account:'Pix'},{id:3,type:'expense',value:220,desc:'Combustível',category:'Carro',date:y+'17',account:'Crédito'}],fixed:[{id:11,value:1450,desc:'Financiamento do carro',category:'Carro',day:10,active:true},{id:12,value:800,desc:'Pensão alimentícia',category:'Pensão',day:5,active:true},{id:13,value:165,desc:'Seguro do carro',category:'Seguros',day:18,active:true},{id:14,value:95,desc:'Seguro da moto',category:'Seguros',day:18,active:true}],cards:[{id:21,name:'Cartão principal',dueDay:10,limit:5000}],cardInvoices:[{id:22,cardId:21,month:y.slice(0,7),baseValue:640}],cardItems:[{id:23,cardId:21,month:y.slice(0,7),value:220,desc:'Combustível',category:'Carro',date:y+'17'}],payments:[],limits:{'Alimentação':800,'Carro':600},goals:[{id:31,name:'Reserva de emergência',target:10000,saved:2500,deadline:''}]};ensureCatsOn(data);currentCardId=21;save();go('home');showToast('Exemplo carregado')}
-function clearData(){if(confirm('Tem certeza? Isso apaga TODOS os dados deste aparelho (lançamentos, contas fixas, cartões e faturas). Só dá para recuperar com um backup.')){data={transactions:[],fixed:[],cards:[],cardInvoices:[],cardItems:[],payments:[],limits:{},goals:[]};ensureCatsOn(data);currentCardId=null;save();showToast('Dados apagados')}}
+function seedDemo(){if(!confirm('ATENÇÃO: isso SUBSTITUI todos os seus dados atuais por dados de exemplo. Se ainda não fez backup, cancele e exporte antes. Continuar?'))return;let y=iso(new Date()).slice(0,8);data={transactions:[{id:1,type:'income',value:6500,desc:'Salário',category:'Salário',date:y+'05',account:'Conta bancária'},{id:2,type:'expense',value:185.42,desc:'Supermercado',category:'Alimentação',date:y+'12',account:'Pix'},{id:3,type:'expense',value:220,desc:'Combustível',category:'Carro',date:y+'17',account:'Crédito'}],fixed:[{id:11,value:1450,desc:'Financiamento do carro',category:'Carro',day:10,active:true},{id:12,value:800,desc:'Pensão alimentícia',category:'Pensão',day:5,active:true},{id:13,value:165,desc:'Seguro do carro',category:'Seguros',day:18,active:true},{id:14,value:95,desc:'Seguro da moto',category:'Seguros',day:18,active:true}],cards:[{id:21,name:'Cartão principal',dueDay:10,limit:5000}],cardInvoices:[{id:22,cardId:21,month:y.slice(0,7),baseValue:640}],cardItems:[{id:23,cardId:21,month:y.slice(0,7),value:220,desc:'Combustível',category:'Carro',date:y+'17'}],payments:[],limits:{'Alimentação':800,'Carro':600},goals:[{id:31,name:'Reserva de emergência',target:10000,saved:2500,deadline:''}],receivables:[{id:41,desc:'Salário do mês',category:'Salário',target:3500,month:y.slice(0,7)}]};ensureCatsOn(data);currentCardId=21;save();go('home');showToast('Exemplo carregado')}
+function clearData(){if(confirm('Tem certeza? Isso apaga TODOS os dados deste aparelho (lançamentos, contas fixas, cartões e faturas). Só dá para recuperar com um backup.')){data={transactions:[],fixed:[],cards:[],cardInvoices:[],cardItems:[],payments:[],limits:{},goals:[],receivables:[]};ensureCatsOn(data);currentCardId=null;save();showToast('Dados apagados')}}
 document.getElementById('today').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});cats('expense',document.getElementById('category'));cats('expense',document.getElementById('fCategory'));cats('expense',document.getElementById('ciCategory'));currentCardId=data.cards[0]?.id||null;render();setTimeout(()=>{syncNativeReminders();try{if(window.AndroidVoice&&typeof window.AndroidVoice.requestNotificationPermission==='function')window.AndroidVoice.requestNotificationPermission()}catch(e){}},900);
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
