@@ -155,7 +155,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.17 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.18 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -487,7 +487,16 @@ function renderMoves(){
   document.getElementById('moveTypes').innerHTML=[['all','Todos'],['expense','Saídas'],['income','Entradas']].map(([k,l])=>`<button class="pill${moveType===k?' active':''}" onclick="setMoveType('${k}')">${l}</button>`).join('');
   let inc=rows.filter(x=>x.type==='income').reduce((a,b)=>a+Number(b.value||0),0),exp=rows.filter(x=>x.type==='expense').reduce((a,b)=>a+Number(b.value||0),0);
   document.getElementById('moveTotals').textContent=all.length?`${rows.length} lançamento(s) · Entradas ${brl(inc)} · Saídas ${brl(exp)}`:'';
-  list.innerHTML=rows.map(txHtml).join('')||(all.length?`<div class="empty">Nada encontrado com esse filtro.</div>`:`<div class="empty">Nenhum lançamento em ${monthLabel(mk)}.</div>`)
+  list.innerHTML=rows.map(txHtml).join('')||emptyMoves(mk)
+}
+function emptyMoves(mk){
+  if(moveQuery)return `<div class="empty">Nada encontrado para essa busca em ${monthLabel(mk)}.</div>`;
+  let what=moveType==='expense'?'gasto':moveType==='income'?'receita':'lançamento',counts={},cur=iso(new Date()).slice(0,7),dist=k=>{let [y1,m1]=k.split('-').map(Number),[y2,m2]=cur.split('-').map(Number);return Math.abs((y1-y2)*12+(m1-m2))};
+  data.transactions.forEach(x=>{if(moveType==='all'||x.type===moveType){let k=monthKey(x.date||'');if(k&&k!==mk)counts[k]=(counts[k]||0)+1}});
+  let ks=Object.keys(counts).sort((a,b)=>dist(a)-dist(b)||b.localeCompare(a)).slice(0,4).sort();
+  let chips=ks.length?`<div style="margin-top:14px">Você tem ${what}s em:</div><div class="monthstrip" style="justify-content:center;flex-wrap:wrap;margin-top:8px">${ks.map(k=>{let [y,m]=k.split('-').map(Number);return `<button class="pill" onclick="setDashboardMonth('${k}')">${new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','')} (${counts[k]})</button>`}).join('')}</div>`:'';
+  let extra=moveType==='expense'?`<div style="margin-top:12px;font-size:12px">Contas fixas e gastos de cartão ficam nas abas <b>Fixas</b> e <b>Cartões</b>.</div>`:'';
+  return `<div class="empty"><b>Nenhum ${what} em ${monthLabel(mk)}.</b>${chips}${extra}</div>`
 }
 
 // ===== Categorias personalizadas (v0.16) =====
