@@ -179,7 +179,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.29 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.30 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -827,7 +827,7 @@ function disableLock(){
   saveLockConfig({enabled:false,pinHash:'',biometric:false});
   closeSheets();showToast('Bloqueio desativado')
 }
-function checkLockOnLoad(){
+function relock(){
   let cfg=getLockConfig();
   if(cfg.enabled&&cfg.pinHash){
     document.getElementById('lockScreen').style.display='flex';
@@ -838,6 +838,7 @@ function checkLockOnLoad(){
     else setTimeout(()=>document.getElementById('lockInput').focus(),150)
   }
 }
+function checkLockOnLoad(){relock()}
 function requestBiometric(){try{if(window.AndroidVoice&&AndroidVoice.showBiometricPrompt)AndroidVoice.showBiometricPrompt()}catch(e){}}
 function unlockFromBiometric(){document.getElementById('lockScreen').style.display='none'}
 function tryUnlock(){

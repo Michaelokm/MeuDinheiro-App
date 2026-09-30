@@ -48,6 +48,7 @@ public class MainActivity extends Activity {
     private static final int NOTIFICATION_REQUEST = 4018;
     private static final int BACKUP_EXPORT_REQUEST = 4019;
     private static final int BACKUP_IMPORT_REQUEST = 4020;
+    private boolean suppressNextRelock = false;
     private static final String CHANNEL_ID = "vencimentos";
     private static final String PREFS = "meu_dinheiro_reminders";
     private static final String PREF_DAILY_TIME = "daily_reminder_time";
@@ -110,6 +111,7 @@ public class MainActivity extends Activity {
                 intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
                 intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Fale um lançamento ou uma pergunta");
                 try {
+                    suppressNextRelock = true;
                     startActivityForResult(intent, VOICE_REQUEST);
                 } catch (ActivityNotFoundException e) {
                     sendVoiceError("O reconhecimento de voz do Android não está disponível.");
@@ -155,6 +157,7 @@ public class MainActivity extends Activity {
                 intent.setType("application/json");
                 intent.putExtra(Intent.EXTRA_TITLE, "MeuDinheiro-backup-" + LocalDate.now() + ".json");
                 try {
+                    suppressNextRelock = true;
                     startActivityForResult(intent, BACKUP_EXPORT_REQUEST);
                 } catch (Exception e) {
                     sendBackupError("Não foi possível abrir o local para salvar o backup.");
@@ -185,6 +188,7 @@ public class MainActivity extends Activity {
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
                 intent.setType("application/json");
                 try {
+                    suppressNextRelock = true;
                     startActivityForResult(intent, BACKUP_IMPORT_REQUEST);
                 } catch (Exception e) {
                     sendBackupError("Não foi possível abrir o seletor de arquivos.");
@@ -457,6 +461,18 @@ public class MainActivity extends Activity {
             } else {
                 markFired(context, key);
             }
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (suppressNextRelock) {
+            suppressNextRelock = false;
+            return;
+        }
+        if (webView != null) {
+            webView.evaluateJavascript("if(window.relock)relock();", null);
         }
     }
 
