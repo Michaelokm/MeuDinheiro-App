@@ -116,6 +116,7 @@
     <div class="card commit"><div class="ring" id="ring"><b id="ringText">0%</b></div><div><strong id="fixedTotal">R$ 0,00 em contas fixas</strong><p id="fixedHint">Cadastre suas despesas mensais recorrentes.</p></div></div>
     <div class="section"><h2>Onde seu dinheiro vai</h2><button onclick="go('plan')">Ver relatório</button></div>
     <div class="card" id="homeCats"></div>
+    <button class="recv-banner" style="margin-top:10px" onclick="openHeatmapDirect()"><span class="rb-ic">🔥</span><span class="rb-txt"><span class="rb-title">Mapa de calor</span><div class="rb-sub">Veja seus gastos dia a dia</div></span><span class="rb-chev">›</span></button>
     <div class="section" id="recvHomeSection" style="display:none"><h2>A receber</h2><button onclick="openReceivables()">Gerenciar</button></div>
     <div class="card" id="recvHomeCard" style="display:none"></div>
     <div class="section"><h2>Cartões</h2><button onclick="go('cards')">Ver faturas</button></div>
@@ -155,8 +156,8 @@
       <div class="cashflow-labels"><span>dia 1</span><span id="cashflowLast">dia 30</span></div>
       <p class="mini-note" id="cashflowNote" style="padding:0 14px;margin-top:8px"></p>
     </div>
-    <div class="section"><h2>Mapa de calor · gasto por dia</h2></div>
-    <div class="card" style="padding:14px">
+    <div class="section" id="heatmapSection"><h2>Mapa de calor · gasto por dia</h2></div>
+    <div class="card" id="heatmapCard" style="padding:14px">
       <div class="heat-head" id="heatHead"></div>
       <div class="heat-grid" id="heatmapGrid"></div>
       <div class="heat-legend">menos <i class="lvl1"></i><i class="lvl2"></i><i class="lvl3"></i><i class="lvl4"></i> mais</div>
@@ -210,7 +211,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.33 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.34 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -941,6 +942,8 @@ function openHeatDay(mk,d){
   document.getElementById('heatDayList').innerHTML=items.map(e=>entryRow(e,'closeSheets();')).join('')||'<div class="empty">Nenhum gasto neste dia.</div>';
   document.getElementById('heatDayOverlay').classList.add('show')
 }
+
+function openHeatmapDirect(){go('plan');setTimeout(()=>{let el=document.getElementById('heatmapSection');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},80)}
 function openVoice(){voiceDraft=null;document.getElementById('voiceSave').style.display='none';document.getElementById('transcript').textContent='Ex.: “Gastei 87 reais no supermercado” ou “quanto gastei este mês?”';document.getElementById('voiceStatus').textContent='Toque e fale um lançamento ou uma pergunta.';document.getElementById('voiceOverlay').classList.add('show')}
 function applyVoiceText(t){let btn=document.getElementById('micBtn');btn.classList.remove('listening');document.getElementById('transcript').textContent=t;if(isFinancialQuestion(t)){let answer=financialAnswer(t);voiceDraft=null;document.getElementById('voiceSave').style.display='none';if(answer){document.getElementById('voiceStatus').textContent=answer;document.getElementById('transcript').textContent=`Você: ${t}\n\nMeu Dinheiro: ${answer}`;speakText(answer)}else document.getElementById('voiceStatus').textContent='Ainda não consegui responder essa pergunta.';return}voiceDraft=parseVoice(t);document.getElementById('voiceStatus').textContent=voiceDraft?`Entendi: ${voiceDraft.type==='income'?'entrada':'saída'} de ${brl(voiceDraft.value)}.`:'Não consegui entender. Tente fazer um lançamento ou uma pergunta sobre seus gastos.';document.getElementById('voiceSave').style.display=voiceDraft?'block':'none'}
 window.onNativeVoiceResult=t=>applyVoiceText(t);
