@@ -8,6 +8,9 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
+import android.content.DialogInterface;
+import android.hardware.biometrics.BiometricPrompt;
+import android.os.CancellationSignal;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -160,6 +163,11 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void showBiometricPrompt() {
+            runOnUiThread(() -> MainActivity.this.showBiometricPrompt());
+        }
+
+        @JavascriptInterface
         public void setDailyReminder(String time) {
             if (time == null || !time.matches("\\d{1,2}:\\d{2}")) return;
             runOnUiThread(() -> MainActivity.scheduleDailyReminder(MainActivity.this, time));
@@ -182,6 +190,41 @@ public class MainActivity extends Activity {
                     sendBackupError("Não foi possível abrir o seletor de arquivos.");
                 }
             });
+        }
+    }
+
+    private void showBiometricPrompt() {
+        if (Build.VERSION.SDK_INT < 28) return;
+        try {
+            BiometricPrompt.Builder builder = new BiometricPrompt.Builder(this)
+                    .setTitle("Meu Dinheiro")
+                    .setSubtitle("Use sua digital para entrar")
+                    .setNegativeButton("Usar senha", getMainExecutor(),
+                            (DialogInterface dialog, int which) -> dialog.dismiss());
+            BiometricPrompt prompt = builder.build();
+            CancellationSignal cancelSignal = new CancellationSignal();
+            prompt.authenticate(cancelSignal, getMainExecutor(), new BiometricPrompt.AuthenticationCallback() {
+                @Override
+                public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                    runOnUiThread(() -> {
+                        if (webView != null) {
+                            webView.evaluateJavascript("if(window.unlockFromBiometric)unlockFromBiometric();", null);
+                        }
+                    });
+                }
+
+                @Override
+                public void onAuthenticationError(int errorCode, CharSequence errString) {
+                    // Falhou, cancelou ou não tem digital cadastrada: a senha continua disponível na tela.
+                }
+
+                @Override
+                public void onAuthenticationFailed() {
+                    // Digital não reconhecida: o próprio sistema já mostra um aviso e permite tentar de novo.
+                }
+            });
+        } catch (Exception ignored) {
+            // Aparelho sem sensor de digital compatível: a senha continua disponível na tela.
         }
     }
 

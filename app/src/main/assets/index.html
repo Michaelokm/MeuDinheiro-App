@@ -60,6 +60,7 @@
     .color-row{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px}.color-row button{width:32px;height:32px;border-radius:50%;border:2px solid transparent}.color-row button.sel{border-color:#fff}
     .lockscreen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px}.lock-inner{width:100%;max-width:320px;text-align:center}.lock-emoji{font-size:44px;margin-bottom:6px}#lockInput{width:100%;text-align:center;letter-spacing:10px;font-size:24px;padding:14px;border-radius:14px;border:1px solid #2a3340;background:#11161e;color:#fff;margin:16px 0 6px;outline:none}
     .bulk-row{display:flex;align-items:center;gap:10px;padding:9px 2px}.bulk-row label{flex:1;font-size:13px;display:flex;align-items:center}.bulk-row input{width:100px;padding:9px 10px;border-radius:12px;border:1px solid #2a3340;background:#11161e;color:#fff;text-align:right}
+    .credit-actions{flex-wrap:wrap}
   </style>
 </head>
 <body>
@@ -159,7 +160,7 @@
       <div class="card" id="invoiceList"></div>
       <button class="save" id="invoicePaidBtn" onclick="toggleCurrentInvoicePaid()">✓ Marcar fatura como paga</button>
       <button class="ghost" onclick="copyPreviousInvoice()">📋 Copiar fatura anterior</button>
-      <div class="credit-actions"><button onclick="openInvoiceBase()">✏️ Valor da fatura</button><button class="primary" onclick="openCardItem()">＋ Acrescentar gasto</button></div>
+      <div class="credit-actions"><button onclick="openInvoiceBase()">✏️ Valor da fatura</button><button onclick="openQuickRefund()">↩️ Estorno</button><button class="primary" onclick="openCardItem()">＋ Acrescentar gasto</button></div>
       <p class="mini-note">Você pode colocar primeiro o valor que já veio acumulado na fatura e depois ir acrescentando novos gastos naquele mês. Isso não altera seus lançamentos comuns automaticamente. Toque em um gasto da fatura para editar.</p>
       <div class="section"><h2>Planejamento</h2><button onclick="go('plan')">Ver mês</button></div>
     </div>
@@ -178,7 +179,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.27 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.29 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -354,6 +355,7 @@
     <button class="save" onclick="setLockPin()">Ativar bloqueio</button>
   </div>
   <div id="lockActiveBox" style="display:none">
+    <div class="toggle"><div><b>Também usar digital</b><div style="font-size:12px;color:var(--muted);margin-top:3px">Usa a digital cadastrada no aparelho; a senha continua funcionando</div></div><button class="switch" id="lockBioSwitch" onclick="toggleLockBiometric()"></button></div>
     <button class="save" onclick="showLockSetup()">Alterar senha</button>
     <button class="ghost" style="color:#ff858e" onclick="disableLock()">Desativar bloqueio</button>
   </div>
@@ -368,8 +370,18 @@
     <input id="lockInput" type="password" inputmode="numeric" maxlength="6" autocomplete="off" onkeydown="if(event.key==='Enter')tryUnlock()" />
     <div id="lockError" class="mini-note" style="color:#ff8992;min-height:16px"></div>
     <button class="save" onclick="tryUnlock()">Entrar</button>
+    <button class="ghost" id="lockBioBtn" style="display:none" onclick="requestBiometric()">👆 Usar digital</button>
   </div>
 </div>
+
+<div class="overlay" id="quickRefundOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
+  <div class="handle"></div><h3>Estorno na fatura</h3>
+  <p class="mini-note" style="margin-top:0" id="qrInfo"></p>
+  <div class="money-input"><span>R$</span><input id="qrValue" inputmode="decimal" placeholder="0,00" /></div>
+  <div class="field"><label>Descrição (opcional)</label><input id="qrDesc" placeholder="Ex.: Estorno Nubank" /></div>
+  <button class="save" onclick="saveQuickRefund()">Registrar estorno</button>
+  <button class="ghost" onclick="closeSheets()">Cancelar</button>
+</div></div>
 
 <div class="toast" id="toast"></div>
 <script>
@@ -794,10 +806,11 @@ function saveDailyReminder(){
 function simpleHash(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h+s.charCodeAt(i))|0}return String(h)}
 function getLockConfig(){try{return JSON.parse(localStorage.getItem('md_lock')||'{}')}catch(e){return{}}}
 function saveLockConfig(cfg){localStorage.setItem('md_lock', JSON.stringify(cfg))}
+function toggleLockBiometric(){let cfg=getLockConfig();cfg.biometric=!cfg.biometric;saveLockConfig(cfg);document.getElementById('lockBioSwitch').classList.toggle('on',cfg.biometric)}
 function openLockManage(){
   let cfg=getLockConfig();
   document.getElementById('lockPin1').value='';document.getElementById('lockPin2').value='';
-  if(cfg.enabled){document.getElementById('lockSetupBox').style.display='none';document.getElementById('lockActiveBox').style.display='block';document.getElementById('lockInfo').textContent='Bloqueio ativado. O app pede a senha toda vez que for aberto.'}
+  if(cfg.enabled){document.getElementById('lockSetupBox').style.display='none';document.getElementById('lockActiveBox').style.display='block';document.getElementById('lockInfo').textContent='Bloqueio ativado. O app pede a senha toda vez que for aberto.';document.getElementById('lockBioSwitch').classList.toggle('on',!!cfg.biometric)}
   else{document.getElementById('lockSetupBox').style.display='block';document.getElementById('lockActiveBox').style.display='none';document.getElementById('lockInfo').textContent='Peça uma senha numérica (4 a 6 dígitos) toda vez que o app for aberto.'}
   document.getElementById('lockManageOverlay').classList.add('show')
 }
@@ -806,12 +819,12 @@ function setLockPin(){
   let p1=document.getElementById('lockPin1').value,p2=document.getElementById('lockPin2').value;
   if(!/^\d{4,6}$/.test(p1))return showToast('A senha precisa ter de 4 a 6 números');
   if(p1!==p2)return showToast('As senhas não coincidem');
-  saveLockConfig({enabled:true,pinHash:simpleHash(p1)});
+  saveLockConfig({enabled:true,pinHash:simpleHash(p1),biometric:false});
   closeSheets();showToast('Bloqueio ativado')
 }
 function disableLock(){
   if(!confirm('Desativar o bloqueio por senha?'))return;
-  saveLockConfig({enabled:false,pinHash:''});
+  saveLockConfig({enabled:false,pinHash:'',biometric:false});
   closeSheets();showToast('Bloqueio desativado')
 }
 function checkLockOnLoad(){
@@ -820,13 +833,34 @@ function checkLockOnLoad(){
     document.getElementById('lockScreen').style.display='flex';
     document.getElementById('lockInput').value='';
     document.getElementById('lockError').textContent='';
-    setTimeout(()=>document.getElementById('lockInput').focus(),150)
+    document.getElementById('lockBioBtn').style.display=cfg.biometric?'block':'none';
+    if(cfg.biometric)setTimeout(requestBiometric,300);
+    else setTimeout(()=>document.getElementById('lockInput').focus(),150)
   }
 }
+function requestBiometric(){try{if(window.AndroidVoice&&AndroidVoice.showBiometricPrompt)AndroidVoice.showBiometricPrompt()}catch(e){}}
+function unlockFromBiometric(){document.getElementById('lockScreen').style.display='none'}
 function tryUnlock(){
   let cfg=getLockConfig(),val=document.getElementById('lockInput').value;
   if(val&&simpleHash(val)===cfg.pinHash){document.getElementById('lockScreen').style.display='none'}
   else{document.getElementById('lockError').textContent='Senha incorreta';document.getElementById('lockInput').value='';document.getElementById('lockInput').focus()}
+}
+
+// ===== Estorno rápido direto na fatura (v0.28) =====
+function openQuickRefund(){
+  let c=selectedCard();if(!c)return showToast('Cadastre um cartão primeiro');
+  document.getElementById('qrInfo').textContent=`${c.name} · fatura de ${monthLabel(currentInvoiceMonth)} · hoje está em ${brl(invoiceTotalFor(c.id,currentInvoiceMonth))}`;
+  document.getElementById('qrValue').value='';document.getElementById('qrDesc').value='';
+  document.getElementById('quickRefundOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('qrValue').focus(),60)
+}
+function saveQuickRefund(){
+  let c=selectedCard();if(!c)return closeSheets();
+  let value=parseMoney(document.getElementById('qrValue').value);if(!value)return showToast('Informe o valor do estorno');
+  let desc=document.getElementById('qrDesc').value.trim()||'Estorno';
+  data.cardItems.push({id:Date.now(),cardId:c.id,month:currentInvoiceMonth,value,desc,category:'Outros',date:iso(new Date()),refund:true});
+  save();closeSheets();
+  showToast(`Estorno registrado · fatura agora em ${brl(invoiceTotalFor(c.id,currentInvoiceMonth))}`)
 }
 function openVoice(){voiceDraft=null;document.getElementById('voiceSave').style.display='none';document.getElementById('transcript').textContent='Ex.: “Gastei 87 reais no supermercado” ou “quanto gastei este mês?”';document.getElementById('voiceStatus').textContent='Toque e fale um lançamento ou uma pergunta.';document.getElementById('voiceOverlay').classList.add('show')}
 function applyVoiceText(t){let btn=document.getElementById('micBtn');btn.classList.remove('listening');document.getElementById('transcript').textContent=t;if(isFinancialQuestion(t)){let answer=financialAnswer(t);voiceDraft=null;document.getElementById('voiceSave').style.display='none';if(answer){document.getElementById('voiceStatus').textContent=answer;document.getElementById('transcript').textContent=`Você: ${t}\n\nMeu Dinheiro: ${answer}`;speakText(answer)}else document.getElementById('voiceStatus').textContent='Ainda não consegui responder essa pergunta.';return}voiceDraft=parseVoice(t);document.getElementById('voiceStatus').textContent=voiceDraft?`Entendi: ${voiceDraft.type==='income'?'entrada':'saída'} de ${brl(voiceDraft.value)}.`:'Não consegui entender. Tente fazer um lançamento ou uma pergunta sobre seus gastos.';document.getElementById('voiceSave').style.display=voiceDraft?'block':'none'}
