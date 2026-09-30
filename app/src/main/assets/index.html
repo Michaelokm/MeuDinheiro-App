@@ -85,7 +85,10 @@
 <div class="app">
   <div class="top">
     <div class="hello"><b>Meu Dinheiro</b><small id="today"></small></div>
-    <button class="round" onclick="go('settings')">⚙️</button>
+    <div style="display:flex;gap:8px">
+      <button class="round" id="privacyBtn" onclick="togglePrivacy()" aria-label="Mostrar/ocultar valores">👁️</button>
+      <button class="round" onclick="go('settings')">⚙️</button>
+    </div>
   </div>
 
   <section id="home" class="page active">
@@ -207,7 +210,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.32 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.33 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -425,7 +428,9 @@ const CATS_INC=['Salário','Freelance','Reembolso','Venda','Rendimento','Outros'
 let data=JSON.parse(localStorage.getItem('md_data')||'{"transactions":[],"fixed":[],"cards":[],"cardInvoices":[],"cardItems":[],"payments":[],"limits":{},"goals":[]}');
 if(!Array.isArray(data.transactions))data.transactions=[];if(!Array.isArray(data.fixed))data.fixed=[];if(!Array.isArray(data.cards))data.cards=[];if(!Array.isArray(data.cardInvoices))data.cardInvoices=[];if(!Array.isArray(data.cardItems))data.cardItems=[];if(!Array.isArray(data.payments))data.payments=[];if(!data.limits||typeof data.limits!=='object'||Array.isArray(data.limits))data.limits={};if(!Array.isArray(data.goals))data.goals=[];if(!Array.isArray(data.receivables))data.receivables=[];if(!data.catColors||typeof data.catColors!=='object'||Array.isArray(data.catColors))data.catColors={};ensureCatsOn(data);
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
-const brl=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+let privacyMode=localStorage.getItem('md_privacy')==='1';
+const brl=v=>privacyMode?'R$ ••••••':Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+function togglePrivacy(){privacyMode=!privacyMode;localStorage.setItem('md_privacy',privacyMode?'1':'0');document.getElementById('privacyBtn').textContent=privacyMode?'🙈':'👁️';render();if(document.getElementById('moves')&&document.getElementById('moves').classList.contains('active'))renderMoves()}
 const parseMoney=s=>{s=(s||'').toString().trim().replace(/R\$/gi,'').replace(/\s/g,'');if(!s)return 0;if(s.includes(',')){s=s.replace(/\./g,'').replace(',','.')}else if(/^\d{1,3}(\.\d{3})+$/.test(s)){s=s.replace(/\./g,'')}return Number(s)||0};
 let currentType='expense', recurring=false, editingTransactionId=null, voiceDraft=null, currentCardId=null, currentInvoiceMonth=iso(new Date()).slice(0,7), dashboardMonth=localStorage.getItem('md_dashboard_month')||iso(new Date()).slice(0,7);
 function save(){localStorage.setItem('md_data',JSON.stringify(data));render();syncNativeReminders()}
@@ -1014,6 +1019,7 @@ function seedDemo(){if(!confirm('ATENÇÃO: isso SUBSTITUI todos os seus dados a
 function clearData(){if(confirm('Tem certeza? Isso apaga TODOS os dados deste aparelho (lançamentos, contas fixas, cartões e faturas). Só dá para recuperar com um backup.')){data={transactions:[],fixed:[],cards:[],cardInvoices:[],cardItems:[],payments:[],limits:{},goals:[],receivables:[],catColors:{}};ensureCatsOn(data);currentCardId=null;save();showToast('Dados apagados')}}
 document.getElementById('today').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});cats('expense',document.getElementById('category'));cats('expense',document.getElementById('fCategory'));cats('expense',document.getElementById('ciCategory'));currentCardId=data.cards[0]?.id||null;render();setTimeout(()=>{syncNativeReminders();try{if(window.AndroidVoice&&typeof window.AndroidVoice.requestNotificationPermission==='function')window.AndroidVoice.requestNotificationPermission()}catch(e){}},900);
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+document.getElementById('privacyBtn').textContent=privacyMode?'🙈':'👁️';
 checkLockOnLoad();
 </script>
 </body>
