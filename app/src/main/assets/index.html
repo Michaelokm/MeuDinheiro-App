@@ -117,6 +117,7 @@
     <div class="section"><h2>Onde seu dinheiro vai</h2><button onclick="go('plan')">Ver relatório</button></div>
     <div class="card" id="homeCats"></div>
     <button class="recv-banner" style="margin-top:10px" onclick="openHeatmapDirect()"><span class="rb-ic">🔥</span><span class="rb-txt"><span class="rb-title">Mapa de calor</span><div class="rb-sub">Veja seus gastos dia a dia</div></span><span class="rb-chev">›</span></button>
+    <button class="recv-banner" style="margin-top:10px" onclick="openWeekSummaryDirect()"><span class="rb-ic">📅</span><span class="rb-txt"><span class="rb-title">Resumo da semana</span><div class="rb-sub" id="weekHomeSub">Pix, débito e crédito somados</div></span><span class="rb-chev">›</span></button>
     <div class="section" id="recvHomeSection" style="display:none"><h2>A receber</h2><button onclick="openReceivables()">Gerenciar</button></div>
     <div class="card" id="recvHomeCard" style="display:none"></div>
     <div class="section"><h2>Cartões</h2><button onclick="go('cards')">Ver faturas</button></div>
@@ -165,6 +166,9 @@
     </div>
     <div class="section"><h2>Resumo do mês</h2></div>
     <div class="card" id="summaryCard" style="padding:16px"></div>
+    <div class="section" id="weekSummarySection"><h2>Resumo da semana</h2></div>
+    <div class="monthstrip" id="weekStrip" style="margin-bottom:10px"></div>
+    <div class="card" style="padding:16px" id="weekSummaryCard"></div>
     <div class="section"><h2>Gastos por categoria</h2><button onclick="openBulkLimits()">Editar limites</button></div>
     <div class="card" id="catList"></div>
     <p class="mini-note">Toque numa categoria para ver os itens (e editar) ou definir um limite mensal. Conta lançamentos, contas fixas e gastos de cartão. Quando chegar em 80% ou passar do limite, o app avisa.</p>
@@ -211,7 +215,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.34 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.35 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -613,7 +617,7 @@ function limitWarning(cat,mk){let lim=Number(data.limits[cat]||0);if(!lim)return
 function shortMonth(k){let [y,m]=k.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}
 function fillMonthStrip(id){let el=document.getElementById(id);if(!el)return;let now=new Date(),months=[];for(let i=-6;i<=6;i++){let d=new Date(now.getFullYear(),now.getMonth()+i,1);months.push(iso(d).slice(0,7))}if(!months.includes(dashboardMonth))months.push(dashboardMonth);months=[...new Set(months)].sort();el.innerHTML=months.map(k=>{let [y,m]=k.split('-').map(Number),label=new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','');return `<button class="pill${k===dashboardMonth?' active':''}" onclick="setDashboardMonth('${k}')">${label}</button>`}).join('');setTimeout(()=>el.querySelector('.active')?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}),0)}
 function catRowHtml(c,spent,out,limit){let lim=Number(limit||0),pct=lim?spent/lim:0,cls='',w=0,sub,subcls='';if(lim){cls=pct>=1?'over':pct>=.8?'warn':'ok';subcls=cls==='ok'?'':cls;w=Math.min(100,pct*100);sub=pct>=1?`Estourou ${brl(spent-lim)} · ${Math.round(pct*100)}% de ${brl(lim)}`:`${Math.round(pct*100)}% de ${brl(lim)} · faltam ${brl(lim-spent)}`}else{let share=out?spent/out*100:0;w=Math.min(100,share);sub=`${Math.round(share)}% das saídas · toque para ver e editar os itens`}let cc=data.catColors[c],dot=cc?`<span class="catdot" style="background:${cc}"></span>`:'',barStyle=(!lim&&cc)?`background:${cc}`:'';return `<div class="cat-row" data-cat="${esc(c)}" onclick="openCatDetail(this.dataset.cat)"><div class="icon">${icon(c)}</div><div><div class="cat-top"><b>${dot}${esc(c)}</b><span>${brl(spent)}</span></div><div class="bar"><i class="${cls}" style="width:${w}%;${barStyle}"></i></div><div class="cat-sub ${subcls}">${sub}</div></div></div>`}
-function renderPlan(){renderCashflow();renderHeatmap();renderMonthSummary();
+function renderPlan(){renderCashflow();renderHeatmap();renderMonthSummary();renderWeekSummary();
   let el=document.getElementById('catList');if(!el)return;
   let mk=dashboardMonth,t=monthTotals(mk),ct=monthCatTotals(mk);
   fillMonthStrip('planMonthStrip');
@@ -626,7 +630,8 @@ function renderPlan(){renderCashflow();renderHeatmap();renderMonthSummary();
   document.getElementById('trendCard').innerHTML=`<div class="trend">${rt.map(r=>`<div class="tcol"><div class="tbars"><i class="in" style="height:${Math.max(2,Math.round(r.inc/mx*100))}px"></i><i class="out" style="height:${Math.max(2,Math.round(r.out/mx*100))}px"></i></div><div class="tlab">${shortMonth(r.k)}</div></div>`).join('')}</div><div class="tlegend"><span><b style="background:var(--green)"></b>Entradas</span><span><b style="background:var(--red)"></b>Saídas</span><span>Média de saídas: ${brl(avg)}</span></div>`;
   document.getElementById('goalList').innerHTML=data.goals.map(goalHtml).join('')||`<div class="empty">Crie uma meta (viagem, reserva, moto…)<br>e acompanhe quanto já juntou.</div>`
 }
-function renderHomeExtras(){let goalsCard=document.getElementById('goalsHomeCard'),goalsNote=document.getElementById('goalsHomeNote');if(goalsCard){if(data.goals.length){goalsCard.innerHTML=data.goals.map(goalHtml).join('');goalsNote.textContent=''}else{goalsCard.innerHTML='';goalsNote.textContent='Nenhuma meta ainda. Toque em "+ Meta" para criar (ex.: Reserva de emergência).'}}
+function renderHomeExtras(){let wSub=document.getElementById('weekHomeSub');if(wSub)wSub.textContent=`Essa semana: ${brl(weekSpend(iso(weekStartDate(new Date()))).total)}`;
+  let goalsCard=document.getElementById('goalsHomeCard'),goalsNote=document.getElementById('goalsHomeNote');if(goalsCard){if(data.goals.length){goalsCard.innerHTML=data.goals.map(goalHtml).join('');goalsNote.textContent=''}else{goalsCard.innerHTML='';goalsNote.textContent='Nenhuma meta ainda. Toque em "+ Meta" para criar (ex.: Reserva de emergência).'}}
   let recvList=receivablesForMonth(dashboardMonth),recvSec=document.getElementById('recvHomeSection'),recvCard=document.getElementById('recvHomeCard');if(recvList.length){recvSec.style.display='flex';recvCard.style.display='block';recvCard.innerHTML=recvList.map(receivableHtml).join('')}else{recvSec.style.display='none';recvCard.style.display='none'}
   let box=document.getElementById('homeCats');if(!box)return;
   let mk=dashboardMonth,t=monthTotals(mk),ct=monthCatTotals(mk);
@@ -944,6 +949,36 @@ function openHeatDay(mk,d){
 }
 
 function openHeatmapDirect(){go('plan');setTimeout(()=>{let el=document.getElementById('heatmapSection');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},80)}
+
+// ===== Resumo da semana: Pix + Débito + Crédito somados (v0.35) =====
+function weekStartDate(d){let x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-x.getDay());return x}
+let currentWeekStart=iso(weekStartDate(new Date()));
+function weekRangeLabel(startIso){let start=new Date(startIso+'T12:00:00'),end=new Date(start);end.setDate(end.getDate()+6);let f=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}).replace('.','');return `${f(start)} - ${f(end)}`}
+function weekSpend(startIso){
+  let end=iso((()=>{let d=new Date(startIso+'T12:00:00');d.setDate(d.getDate()+6);return d})()),byMethod={},add=(label,v)=>{byMethod[label]=(byMethod[label]||0)+v};
+  data.transactions.filter(x=>x.type==='expense'&&!x.ignored&&x.date>=startIso&&x.date<=end).forEach(x=>add(x.account||'Outro',Number(x.value||0)));
+  data.cardItems.filter(x=>!x.ignored&&x.date&&x.date>=startIso&&x.date<=end).forEach(x=>{let c=data.cards.find(k=>k.id===x.cardId);add(c?c.name:'Cartão de crédito',x.refund?-Number(x.value||0):Number(x.value||0))});
+  let total=Object.values(byMethod).reduce((a,b)=>a+b,0);
+  return{total,byMethod,start:startIso,end}
+}
+function buildWeekStrip(){
+  let el=document.getElementById('weekStrip');if(!el)return;
+  let weeks=[],base=weekStartDate(new Date());
+  for(let i=-4;i<=3;i++){let d=new Date(base);d.setDate(d.getDate()+i*7);weeks.push(iso(d))}
+  if(!weeks.includes(currentWeekStart))weeks.push(currentWeekStart);
+  weeks=[...new Set(weeks)].sort();
+  el.innerHTML=weeks.map(w=>`<button class="pill${w===currentWeekStart?' active':''}" onclick="setWeek('${w}')">${weekRangeLabel(w)}</button>`).join('');
+  setTimeout(()=>el.querySelector('.active')?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}),0)
+}
+function setWeek(w){currentWeekStart=w;renderWeekSummary()}
+function renderWeekSummary(){
+  let card=document.getElementById('weekSummaryCard');if(!card)return;
+  buildWeekStrip();
+  let{total,byMethod}=weekSpend(currentWeekStart);
+  let rows=Object.entries(byMethod).sort((a,b)=>b[1]-a[1]).map(([label,v])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line)"><span>${esc(label)}</span><b>${brl(v)}</b></div>`).join('');
+  card.innerHTML=`<div style="text-align:center;padding:2px 0 14px"><div class="mini-note">Total gasto na semana · ${weekRangeLabel(currentWeekStart)}</div><div style="font-size:30px;font-weight:800;margin-top:4px">${brl(total)}</div></div>`+(rows||'<div class="empty">Nenhum gasto nessa semana.</div>')
+}
+function openWeekSummaryDirect(){go('plan');setTimeout(()=>{let el=document.getElementById('weekSummarySection');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},80)}
 function openVoice(){voiceDraft=null;document.getElementById('voiceSave').style.display='none';document.getElementById('transcript').textContent='Ex.: “Gastei 87 reais no supermercado” ou “quanto gastei este mês?”';document.getElementById('voiceStatus').textContent='Toque e fale um lançamento ou uma pergunta.';document.getElementById('voiceOverlay').classList.add('show')}
 function applyVoiceText(t){let btn=document.getElementById('micBtn');btn.classList.remove('listening');document.getElementById('transcript').textContent=t;if(isFinancialQuestion(t)){let answer=financialAnswer(t);voiceDraft=null;document.getElementById('voiceSave').style.display='none';if(answer){document.getElementById('voiceStatus').textContent=answer;document.getElementById('transcript').textContent=`Você: ${t}\n\nMeu Dinheiro: ${answer}`;speakText(answer)}else document.getElementById('voiceStatus').textContent='Ainda não consegui responder essa pergunta.';return}voiceDraft=parseVoice(t);document.getElementById('voiceStatus').textContent=voiceDraft?`Entendi: ${voiceDraft.type==='income'?'entrada':'saída'} de ${brl(voiceDraft.value)}.`:'Não consegui entender. Tente fazer um lançamento ou uma pergunta sobre seus gastos.';document.getElementById('voiceSave').style.display=voiceDraft?'block':'none'}
 window.onNativeVoiceResult=t=>applyVoiceText(t);
