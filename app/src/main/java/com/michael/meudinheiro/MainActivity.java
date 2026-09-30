@@ -47,6 +47,8 @@ public class MainActivity extends Activity {
     private static final int BACKUP_IMPORT_REQUEST = 4020;
     private static final String CHANNEL_ID = "vencimentos";
     private static final String PREFS = "meu_dinheiro_reminders";
+    private static final String PREF_DAILY_TIME = "daily_reminder_time";
+    private static final String DAILY_ACTION = "com.michael.meudinheiro.DAILY_REMINDER";
     private static final String PREF_JSON = "reminders_json";
     private static final String PREF_FIRED = "reminders_fired";
 
@@ -158,6 +160,17 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void setDailyReminder(String time) {
+            if (time == null || !time.matches("\\d{1,2}:\\d{2}")) return;
+            runOnUiThread(() -> MainActivity.scheduleDailyReminder(MainActivity.this, time));
+        }
+
+        @JavascriptInterface
+        public void cancelDailyReminder() {
+            runOnUiThread(() -> MainActivity.cancelDailyReminder(MainActivity.this));
+        }
+
+        @JavascriptInterface
         public void importBackup() {
             runOnUiThread(() -> {
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -202,6 +215,49 @@ public class MainActivity extends Activity {
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
+    }
+
+    private static PendingIntent dailyReminderPendingIntent(Context context) {
+        Intent intent = new Intent(context, ReminderReceiver.class);
+        intent.setAction(DAILY_ACTION);
+        intent.putExtra("daily", true);
+        return PendingIntent.getBroadcast(
+                context,
+                reminderCode("daily-reminder-fixed-key"),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+    }
+
+    private static void scheduleDailyReminder(Context context, String time) {
+        try {
+            String[] parts = time.split(":");
+            int hh = Integer.parseInt(parts[0]), mm = Integer.parseInt(parts[1]);
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime next = now.withHour(hh).withMinute(mm).withSecond(0).withNano(0);
+            if (!next.isAfter(now)) next = next.plusDays(1);
+            long trigger = next.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+
+            SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            prefs.edit().putString(PREF_DAILY_TIME, time).apply();
+
+            AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            PendingIntent pi = dailyReminderPendingIntent(context);
+            if (Build.VERSION.SDK_INT >= 23) {
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pi);
+            } else {
+                am.set(AlarmManager.RTC_WAKEUP, trigger, pi);
+            }
+        } catch (Exception ignored) {
+            // horário inválido: não agenda nada
+        }
+    }
+
+    private static void cancelDailyReminder(Context context) {
+        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        am.cancel(dailyReminderPendingIntent(context));
+        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        prefs.edit().remove(PREF_DAILY_TIME).apply();
     }
 
     private static void cancelJson(Context context, String json) {
@@ -302,6 +358,8 @@ public class MainActivity extends Activity {
     private static void rescheduleStored(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         scheduleJson(context, prefs.getString(PREF_JSON, "[]"));
+        String dailyTime = prefs.getString(PREF_DAILY_TIME, "");
+        if (!dailyTime.isEmpty()) scheduleDailyReminder(context, dailyTime);
     }
 
     public static class ReminderReceiver extends BroadcastReceiver {
@@ -320,9 +378,10 @@ public class MainActivity extends Activity {
 
             ensureNotificationChannel(context);
 
-            String key = intent.getStringExtra("key");
-            String title = intent.getStringExtra("title");
-            String message = intent.getStringExtra("message");
+            boolean isDaily = DAILY_ACTION.equals(action) || intent.getBooleanExtra("daily", false);
+            String key = isDaily ? "daily-reminder-fixed-key" : intent.getStringExtra("key");
+            String title = isDaily ? "Meu Dinheiro" : intent.getStringExtra("title");
+            String message = isDaily ? "Não esqueça de registrar os gastos de hoje 💰" : intent.getStringExtra("message");
 
             Intent openApp = new Intent(context, MainActivity.class);
             openApp.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -347,7 +406,14 @@ public class MainActivity extends Activity {
 
             NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             nm.notify(reminderCode(key), builder.build());
-            markFired(context, key);
+
+            if (isDaily) {
+                SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+                String storedTime = prefs.getString(PREF_DAILY_TIME, "");
+                if (!storedTime.isEmpty()) scheduleDailyReminder(context, storedTime);
+            } else {
+                markFired(context, key);
+            }
         }
     }
 
