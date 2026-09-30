@@ -196,7 +196,7 @@
       <div class="card" id="invoiceList"></div>
       <button class="save" id="invoicePaidBtn" onclick="toggleCurrentInvoicePaid()">✓ Marcar fatura como paga</button>
       <button class="ghost" onclick="copyPreviousInvoice()">📋 Copiar fatura anterior</button>
-      <div class="credit-actions"><button onclick="openInvoiceBase()">✏️ Valor da fatura</button><button onclick="openQuickRefund()">↩️ Estorno</button><button class="primary" onclick="openCardItem()">＋ Acrescentar gasto</button></div>
+      <div class="credit-actions"><button onclick="openInvoiceBase()">✏️ Valor da fatura</button><button onclick="openQuickRefund()">↩️ Estorno</button><button onclick="openQuickAdvance()">💵 Antecipação</button><button class="primary" onclick="openCardItem()">＋ Acrescentar gasto</button></div>
       <button class="ghost" id="reorganizeBtn" style="display:none" onclick="reorganizeByClosing()">🔄 Reorganizar gastos pela data (usa o fechamento)</button>
       <p class="mini-note">Você pode colocar primeiro o valor que já veio acumulado na fatura e depois ir acrescentando novos gastos naquele mês. Isso não altera seus lançamentos comuns automaticamente. Toque em um gasto da fatura para editar.</p>
       <div class="section"><h2>Planejamento</h2><button onclick="go('plan')">Ver mês</button></div>
@@ -216,7 +216,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.37 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.39 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -280,7 +280,7 @@
   <button type="button" class="linklike" id="ciMoreBtn" onclick="toggleCiMore()">⚙️ Mais opções (categoria e data)</button>
   <div class="row2" id="ciMoreBox" style="display:none"><div class="field"><label>Categoria</label><select id="ciCategory" onchange="catSelectChanged(this,'expense')"></select></div><div class="field"><label>Data</label><input id="ciDate" type="date" /></div></div>
   <div id="ciInstBox"><div class="field"><label>Parcelas</label><input id="ciInstallments" type="number" min="1" max="48" value="1" inputmode="numeric" /></div>
-  <p class="mini-note">À vista: deixe 1. Parcelado: informe o valor TOTAL acima, ele é dividido entre as próximas faturas.</p></div>
+  <p class="mini-note">Coloque o valor de cada parcela (o mesmo que aparece na fatura do banco: "3x de R$ 52,49" → digite 52,49). O app repete esse valor nas próximas faturas, sem arredondar nada.</p></div>
   <p class="mini-note" id="ciEditNote" style="display:none"></p>
   <button class="save" id="ciSaveBtn" onclick="saveCardItem()">Adicionar à fatura</button>
   <button class="ghost" id="ciDeleteBtn" style="display:none;color:#ff858e" onclick="deleteEditingCardItem()">Excluir gasto</button><button class="ghost" onclick="closeSheets()">Cancelar</button>
@@ -414,11 +414,11 @@
 </div>
 
 <div class="overlay" id="quickRefundOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
-  <div class="handle"></div><h3>Estorno na fatura</h3>
+  <div class="handle"></div><h3 id="qrTitle">Estorno na fatura</h3>
   <p class="mini-note" style="margin-top:0" id="qrInfo"></p>
   <div class="money-input"><span>R$</span><input id="qrValue" inputmode="decimal" placeholder="0,00" /></div>
   <div class="field"><label>Descrição (opcional)</label><input id="qrDesc" placeholder="Ex.: Estorno Nubank" /></div>
-  <button class="save" onclick="saveQuickRefund()">Registrar estorno</button>
+  <button class="save" onclick="saveQuickRefund()" id="qrSaveBtn">Registrar estorno</button>
   <button class="ghost" onclick="closeSheets()">Cancelar</button>
 </div></div>
 
@@ -542,7 +542,7 @@ function saveCard(){
 function selectedCard(){return data.cards.find(x=>x.id===currentCardId)||data.cards[0]||null}
 function invoiceBase(cardId,month){let x=data.cardInvoices.find(i=>i.cardId===cardId&&i.month===month);return x?Number(x.baseValue||0):0}
 function invoiceItems(cardId,month){return data.cardItems.filter(i=>i.cardId===cardId&&i.month===month)}
-function invoiceTotalFor(cardId,month){return invoiceBase(cardId,month)+invoiceItems(cardId,month).filter(b=>!b.ignored).reduce((a,b)=>a+(b.refund?-Number(b.value||0):Number(b.value||0)),0)}
+function invoiceTotalFor(cardId,month){return invoiceBase(cardId,month)+invoiceItems(cardId,month).filter(b=>!b.ignored).reduce((a,b)=>a+((b.refund||b.advance)?-Number(b.value||0):Number(b.value||0)),0)}
 function currentCardsTotal(mk=dashboardMonth){return data.cards.reduce((sum,c)=>sum+invoiceTotalFor(c.id,mk),0)}
 function setCard(id){currentCardId=id;renderCards()}
 function setInvoiceMonth(m){currentInvoiceMonth=m;renderCards()}
@@ -590,21 +590,21 @@ function setCiKind(k){ciKind=k;document.getElementById('ciTypeExpense').classLis
 function setCiMore(open){document.getElementById('ciMoreBox').style.display=open?'grid':'none';document.getElementById('ciMoreBtn').style.display=open?'none':'block'}
 function toggleCiMore(){setCiMore(true)}
 function saveCardItem(){let c=selectedCard();if(!c)return;let value=parseMoney(document.getElementById('ciValue').value),desc=document.getElementById('ciDesc').value.trim();if(!value||!desc)return showToast('Preencha valor e descrição');let category=document.getElementById('ciCategory').value||'Outros',date=document.getElementById('ciDate').value||iso(new Date()),n=Math.round(Number(document.getElementById('ciInstallments').value)||1);n=Math.min(48,Math.max(1,n));
-  if(editingCardItemId!==null){let it=data.cardItems.find(x=>x.id===editingCardItemId);editingCardItemId=null;if(!it)return showToast('Gasto não encontrado');let changedCat=it.category!==category;it.value=value;it.desc=desc;it.category=category;it.date=date;it.refund=ciKind==='refund';it.ignored=ciIgnored;let auto=invoiceMonthForDate(c,date),movedMsg='';if(auto&&auto!==it.month){it.month=auto;currentInvoiceMonth=auto;movedMsg=` · foi para a fatura de ${monthLabel(auto)}`}if(it.group&&changedCat)data.cardItems.forEach(x=>{if(x.group===it.group)x.category=category});save();closeSheets();showToast((it.group&&changedCat?'Categoria aplicada a todas as parcelas':(it.refund?'Estorno atualizado':'Gasto atualizado'))+movedMsg);return}
+  if(editingCardItemId!==null){let it=data.cardItems.find(x=>x.id===editingCardItemId);editingCardItemId=null;if(!it)return showToast('Gasto não encontrado');let changedCat=it.category!==category;it.value=value;it.desc=desc;it.category=category;it.date=date;it.refund=ciKind==='refund';it.advance=false;it.ignored=ciIgnored;let auto=invoiceMonthForDate(c,date),movedMsg='';if(auto&&auto!==it.month){it.month=auto;currentInvoiceMonth=auto;movedMsg=` · foi para a fatura de ${monthLabel(auto)}`}if(it.group&&changedCat)data.cardItems.forEach(x=>{if(x.group===it.group)x.category=category});save();closeSheets();showToast((it.group&&changedCat?'Categoria aplicada a todas as parcelas':(it.refund?'Estorno atualizado':'Gasto atualizado'))+movedMsg);return}
   dashboardMonth=currentInvoiceMonth;localStorage.setItem('md_dashboard_month',dashboardMonth);
   let targetMonth=invoiceMonthForDate(c,date)||currentInvoiceMonth,movedNote=targetMonth!==currentInvoiceMonth?` · foi para a fatura de ${monthLabel(targetMonth)} (fecha dia ${c.closingDay})`:'';
   if(targetMonth!==currentInvoiceMonth)currentInvoiceMonth=targetMonth;
   if(ciKind==='refund'){data.cardItems.push({id:Date.now(),cardId:c.id,month:targetMonth,value,desc,category,date,refund:true,ignored:ciIgnored});save();closeSheets();showToast('Estorno registrado'+movedNote);return}
   if(n===1){data.cardItems.push({id:Date.now(),cardId:c.id,month:targetMonth,value,desc,category,date,ignored:ciIgnored});save();closeSheets();showToast((limitWarning(category,targetMonth)||'Gasto acrescentado à fatura')+movedNote);return}
-  let group=Date.now(),cents=Math.round(value*100),base=Math.floor(cents/n),rest=cents-base*n,day=Number(date.slice(8,10))||1;
-  for(let i=0;i<n;i++){let month=monthPlus(targetMonth,i);data.cardItems.push({id:group+i,cardId:c.id,month,value:(base+(i<rest?1:0))/100,desc:`${desc} (${i+1}/${n})`,category,date:i===0?date:dueDateForMonth(month,day),group,inst:i+1,instTotal:n})}
-  save();closeSheets();showToast((limitWarning(category,targetMonth)||`${n}x de ${brl(base/100)} nas próximas faturas`)+movedNote)}
-function openEditCardItem(id){let it=data.cardItems.find(x=>x.id===id);if(!it)return;editingCardItemId=id;cats('expense',document.getElementById('ciCategory'));document.getElementById('ciTitle').textContent='Editar gasto da fatura';document.getElementById('ciValue').value=Number(it.value||0).toFixed(2).replace('.',',');document.getElementById('ciDesc').value=it.desc||'';let sel=document.getElementById('ciCategory');sel.value=it.category;sel.dataset.prev=sel.value;document.getElementById('ciDate').value=it.date||iso(new Date());setCiMore(true);setCiKind(it.refund?'refund':'expense');document.getElementById('ciInstBox').style.display='none';ciIgnored=!!it.ignored;document.getElementById('ciIgnoreSwitch').classList.toggle('on',ciIgnored);let note=document.getElementById('ciEditNote');if(it.group){note.textContent=`Compra parcelada (${it.inst||'?'}/${it.instTotal||'?'}). Valor e data mudam só esta parcela; a categoria muda em todas.`;note.style.display='block'}else note.style.display='none';document.getElementById('ciDeleteBtn').style.display='block';document.getElementById('cardItemOverlay').classList.add('show')}
+  let group=Date.now(),day=Number(date.slice(8,10))||1;
+  for(let i=0;i<n;i++){let month=monthPlus(targetMonth,i);data.cardItems.push({id:group+i,cardId:c.id,month,value,desc:`${desc} (${i+1}/${n})`,category,date:i===0?date:dueDateForMonth(month,day),group,inst:i+1,instTotal:n})}
+  save();closeSheets();showToast((limitWarning(category,targetMonth)||`${n}x de ${brl(value)} nas próximas faturas`)+movedNote)}
+function openEditCardItem(id){let it=data.cardItems.find(x=>x.id===id);if(!it)return;editingCardItemId=id;cats('expense',document.getElementById('ciCategory'));document.getElementById('ciTitle').textContent='Editar gasto da fatura';document.getElementById('ciValue').value=Number(it.value||0).toFixed(2).replace('.',',');document.getElementById('ciDesc').value=it.desc||'';let sel=document.getElementById('ciCategory');sel.value=it.category;sel.dataset.prev=sel.value;document.getElementById('ciDate').value=it.date||iso(new Date());setCiMore(true);setCiKind((it.refund||it.advance)?'refund':'expense');document.getElementById('ciInstBox').style.display='none';ciIgnored=!!it.ignored;document.getElementById('ciIgnoreSwitch').classList.toggle('on',ciIgnored);let note=document.getElementById('ciEditNote');if(it.group){note.textContent=`Compra parcelada (${it.inst||'?'}/${it.instTotal||'?'}). Valor e data mudam só esta parcela; a categoria muda em todas.`;note.style.display='block'}else note.style.display='none';document.getElementById('ciDeleteBtn').style.display='block';document.getElementById('cardItemOverlay').classList.add('show')}
 function deleteEditingCardItem(){if(editingCardItemId===null)return;let id=editingCardItemId;closeSheets();editingCardItemId=null;deleteCardItem(id)}
 function deleteCardItem(id){let it=data.cardItems.find(x=>x.id===id);if(!it)return;if(it.group){if(confirm('Essa compra é parcelada. Remover TODAS as parcelas? (Cancelar = escolher só esta)')){data.cardItems=data.cardItems.filter(x=>x.group!==it.group);save();showToast('Compra parcelada removida');return}if(confirm('Remover só esta parcela?')){data.cardItems=data.cardItems.filter(x=>x.id!==id);save()}return}if(confirm('Remover este gasto da fatura?')){data.cardItems=data.cardItems.filter(x=>x.id!==id);save()}}
 function deleteSelectedCard(){let c=selectedCard();if(!c)return;if(confirm(`Excluir o cartão ${c.name} e todas as faturas dele?`)){data.cards=data.cards.filter(x=>x.id!==c.id);data.cardInvoices=data.cardInvoices.filter(x=>x.cardId!==c.id);data.cardItems=data.cardItems.filter(x=>x.cardId!==c.id);currentCardId=data.cards[0]?.id||null;save();showToast('Cartão excluído')}}
 function monthLabel(k){let [y,m]=k.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}
-function renderCards(){let empty=document.getElementById('cardsEmpty'),content=document.getElementById('cardsContent');if(!empty||!content)return;if(!data.cards.length){empty.style.display='block';content.style.display='none';return}empty.style.display='none';content.style.display='block';if(!currentCardId||!data.cards.some(c=>c.id===currentCardId))currentCardId=data.cards[0].id;let c=selectedCard();document.getElementById('cardTabs').innerHTML=data.cards.map(x=>`<button class="card-chip${x.id===c.id?' active':''}" onclick="setCard(${x.id})">💳 ${esc(x.name)}</button>`).join('');document.getElementById('selectedCardName').textContent=c.name;document.getElementById('selectedCardMeta').textContent=`Vence dia ${c.dueDay}`;let total=invoiceTotalFor(c.id,currentInvoiceMonth),paid=isPaid('card',c.id,currentInvoiceMonth);document.getElementById('invoiceMonthLabel').textContent=`Fatura de ${monthLabel(currentInvoiceMonth)}`;document.getElementById('invoiceTotal').textContent=brl(total);document.getElementById('invoiceLimitInfo').textContent='Edite o valor atual ou acrescente novas compras abaixo.';document.getElementById('invoiceStatus').textContent=paid?`✓ ${paidLabel('card',c.id,currentInvoiceMonth)}`:`Pendente · vence dia ${c.dueDay}`;document.getElementById('invoiceStatus').classList.toggle('paid-sub',paid);let payBtn=document.getElementById('invoicePaidBtn');payBtn.textContent=paid?'↩ Desmarcar como paga':'✓ Marcar fatura como paga';payBtn.classList.toggle('paid-btn',paid);buildInvoiceMonths();let rBtn=document.getElementById('reorganizeBtn');if(rBtn)rBtn.style.display=c.closingDay?'block':'none';let base=invoiceBase(c.id,currentInvoiceMonth),items=[...invoiceItems(c.id,currentInvoiceMonth)].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id),rows='';if(base>0)rows+=`<div class="invoice-item"><div class="ii">🧾</div><div><div class="ititle">Valor já acumulado</div><div class="isub">Base informada para esta fatura</div></div><b>${brl(base)}</b><span></span></div>`;rows+=items.map(x=>`<div class="invoice-item${x.ignored?' ignored':''}" style="cursor:pointer" onclick="openEditCardItem(${x.id})"><div class="ii">${x.refund?'↩️':icon(x.category)}</div><div><div class="ititle">${esc(x.desc)}</div><div class="isub">${esc(x.category)}${x.refund?' · Estorno':''}${x.ignored?' · 🚫 Ignorado':''} · ${new Date((x.date||iso(new Date()))+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</div></div><b class="${x.refund?'refund':''}">${x.refund?'+ ':''}${brl(x.value)}</b><button class="idel" onclick="event.stopPropagation();deleteCardItem(${x.id})">×</button></div>`).join('');document.getElementById('invoiceList').innerHTML=rows||'<div class="empty">Nenhum valor nesta fatura ainda.<br>Defina o valor atual ou acrescente um gasto.</div>'}
+function renderCards(){let empty=document.getElementById('cardsEmpty'),content=document.getElementById('cardsContent');if(!empty||!content)return;if(!data.cards.length){empty.style.display='block';content.style.display='none';return}empty.style.display='none';content.style.display='block';if(!currentCardId||!data.cards.some(c=>c.id===currentCardId))currentCardId=data.cards[0].id;let c=selectedCard();document.getElementById('cardTabs').innerHTML=data.cards.map(x=>`<button class="card-chip${x.id===c.id?' active':''}" onclick="setCard(${x.id})">💳 ${esc(x.name)}</button>`).join('');document.getElementById('selectedCardName').textContent=c.name;document.getElementById('selectedCardMeta').textContent=`Vence dia ${c.dueDay}`;let total=invoiceTotalFor(c.id,currentInvoiceMonth),paid=isPaid('card',c.id,currentInvoiceMonth);document.getElementById('invoiceMonthLabel').textContent=`Fatura de ${monthLabel(currentInvoiceMonth)}`;document.getElementById('invoiceTotal').textContent=brl(total);document.getElementById('invoiceLimitInfo').textContent='Edite o valor atual ou acrescente novas compras abaixo.';document.getElementById('invoiceStatus').textContent=paid?`✓ ${paidLabel('card',c.id,currentInvoiceMonth)}`:`Pendente · vence dia ${c.dueDay}`;document.getElementById('invoiceStatus').classList.toggle('paid-sub',paid);let payBtn=document.getElementById('invoicePaidBtn');payBtn.textContent=paid?'↩ Desmarcar como paga':'✓ Marcar fatura como paga';payBtn.classList.toggle('paid-btn',paid);buildInvoiceMonths();let rBtn=document.getElementById('reorganizeBtn');if(rBtn)rBtn.style.display=c.closingDay?'block':'none';let base=invoiceBase(c.id,currentInvoiceMonth),items=[...invoiceItems(c.id,currentInvoiceMonth)].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id),rows='';if(base>0)rows+=`<div class="invoice-item"><div class="ii">🧾</div><div><div class="ititle">Valor já acumulado</div><div class="isub">Base informada para esta fatura</div></div><b>${brl(base)}</b><span></span></div>`;rows+=items.map(x=>`<div class="invoice-item${x.ignored?' ignored':''}" style="cursor:pointer" onclick="openEditCardItem(${x.id})"><div class="ii">${x.refund?'↩️':(x.advance?'💵':icon(x.category))}</div><div><div class="ititle">${esc(x.desc)}</div><div class="isub">${esc(x.category)}${x.refund?' · Estorno':(x.advance?' · Antecipação':'')}${x.ignored?' · 🚫 Ignorado':''} · ${new Date((x.date||iso(new Date()))+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</div></div><b class="${(x.refund||x.advance)?'refund':''}">${(x.refund||x.advance)?'+ ':''}${brl(x.value)}</b><button class="idel" onclick="event.stopPropagation();deleteCardItem(${x.id})">×</button></div>`).join('');document.getElementById('invoiceList').innerHTML=rows||'<div class="empty">Nenhum valor nesta fatura ainda.<br>Defina o valor atual ou acrescente um gasto.</div>'}
 function deleteFixed(id){if(confirm('Remover esta conta fixa?')){data.fixed=data.fixed.filter(x=>x.id!==id);save()}}
 function monthKey(d){return d.slice(0,7)}
 function icon(cat){let m={'Alimentação':'🛒','Moradia':'🏠','Transporte':'🚕','Carro':'🚗','Moto':'🏍️','Pensão':'👤','Seguros':'🛡️','Saúde':'❤️','Educação':'🎓','Lazer':'🎬','Compras':'🛍️','Contas':'🧾','Salário':'💼','Freelance':'💻','Reembolso':'↩️','Venda':'🏷️','Rendimento':'📈'};return (data.catIcons&&data.catIcons[cat])||m[cat]||'•'}
@@ -636,7 +636,7 @@ function financialAnswer(t){let n=normalizeText(t),mk=resolveQuestionMonth(t),la
   if(/conta fixa|contas fixas|fixos|recorrente/.test(n))return `Suas contas fixas cadastradas somam ${brl(fixed)} por mês.`;
   if(/saldo|disponivel|posso gastar|sobrou|sobra/.test(n)){let saldo=inc-exp-fixed-cardsTotal;return `Seu saldo previsto em ${label} é ${brl(saldo)}. Entraram ${brl(inc)}, saíram ${brl(exp)}, as contas fixas somam ${brl(fixed)} e as faturas somam ${brl(cardsTotal)}.`}
   if(/recebi|recebido|entrou|entradas|ganhei|renda/.test(n))return `Em ${label}, você registrou ${brl(inc)} de entradas.`;
-  if(cat){let txCat=expenses.filter(x=>x.category===cat&&!x.ignored).reduce((a,b)=>a+Number(b.value||0),0),cardCat=data.cardItems.filter(x=>x.month===mk&&x.category===cat&&!x.ignored).reduce((a,b)=>a+(b.refund?-Number(b.value||0):Number(b.value||0)),0),total=txCat+cardCat;return `Em ${label}, você registrou ${brl(total)} em ${cat.toLowerCase()}.`}
+  if(cat){let txCat=expenses.filter(x=>x.category===cat&&!x.ignored).reduce((a,b)=>a+Number(b.value||0),0),cardCat=data.cardItems.filter(x=>x.month===mk&&x.category===cat&&!x.ignored).reduce((a,b)=>a+((b.refund||b.advance)?-Number(b.value||0):Number(b.value||0)),0),total=txCat+cardCat;return `Em ${label}, você registrou ${brl(total)} em ${cat.toLowerCase()}.`}
   if(/gastei|gasto|gastos|paguei|saida|saidas/.test(n)){return `Em ${label}, seus gastos lançados somam ${brl(exp)}. As faturas dos cartões estão em ${brl(cardsTotal)}. Somando gastos e faturas, são ${brl(exp+cardsTotal)}.`}
   return null
 }
@@ -644,7 +644,7 @@ function financialAnswer(t){let n=normalizeText(t),mk=resolveQuestionMonth(t),la
 // ===== Relatórios, limites, metas e busca (v0.15) =====
 let moveQuery='',moveType='all',limitCat=null,editingGoalId=null,goalMoveState=null;
 function monthTotals(mk){let tx=data.transactions.filter(x=>monthKey(x.date||'')===mk&&!x.ignored),inc=tx.filter(x=>x.type==='income').reduce((a,b)=>a+Number(b.value||0),0)+receivablesProjected(mk),variable=tx.filter(x=>x.type==='expense').reduce((a,b)=>a+Number(b.value||0),0),fix=data.fixed.filter(x=>x.active!==false).reduce((a,b)=>a+Number(b.value||0),0),cards=currentCardsTotal(mk),out=variable+fix+cards;return{inc,variable,fix,cards,out,saldo:inc-out}}
-function monthCatTotals(mk){let cats={},add=(c,v)=>{c=c||'Outros';cats[c]=(cats[c]||0)+Number(v||0)};data.transactions.filter(x=>x.type==='expense'&&monthKey(x.date||'')===mk&&!x.ignored).forEach(x=>add(x.category,x.value));data.fixed.filter(x=>x.active!==false).forEach(x=>add(x.category,x.value));data.cardItems.filter(x=>x.month===mk&&!x.ignored).forEach(x=>add(x.category,x.refund?-Number(x.value||0):x.value));let base=data.cards.reduce((sum,c)=>sum+invoiceBase(c.id,mk),0);return{cats,base}}
+function monthCatTotals(mk){let cats={},add=(c,v)=>{c=c||'Outros';cats[c]=(cats[c]||0)+Number(v||0)};data.transactions.filter(x=>x.type==='expense'&&monthKey(x.date||'')===mk&&!x.ignored).forEach(x=>add(x.category,x.value));data.fixed.filter(x=>x.active!==false).forEach(x=>add(x.category,x.value));data.cardItems.filter(x=>x.month===mk&&!x.ignored).forEach(x=>add(x.category,(x.refund||x.advance)?-Number(x.value||0):x.value));let base=data.cards.reduce((sum,c)=>sum+invoiceBase(c.id,mk),0);return{cats,base}}
 function limitWarning(cat,mk){let lim=Number(data.limits[cat]||0);if(!lim)return'';let pct=Math.round((monthCatTotals(mk).cats[cat]||0)/lim*100);return pct>=100?`⚠️ ${cat}: ${pct}% do limite`:pct>=80?`⚠️ ${cat}: ${pct}% do limite`:''}
 function shortMonth(k){let [y,m]=k.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}
 function fillMonthStrip(id){let el=document.getElementById(id);if(!el)return;let now=new Date(),months=[];for(let i=-6;i<=6;i++){let d=new Date(now.getFullYear(),now.getMonth()+i,1);months.push(iso(d).slice(0,7))}if(!months.includes(dashboardMonth))months.push(dashboardMonth);months=[...new Set(months)].sort();el.innerHTML=months.map(k=>{let [y,m]=k.split('-').map(Number),label=new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','');return `<button class="pill${k===dashboardMonth?' active':''}" onclick="setDashboardMonth('${k}')">${label}</button>`}).join('');setTimeout(()=>el.querySelector('.active')?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}),0)}
@@ -691,7 +691,7 @@ function renderMoves(){
   document.getElementById('moveTitle').textContent=moveType==='expense'?'Gastos':moveType==='income'?'Receitas':'Movimentações';document.getElementById('moveAddBtn').textContent=moveType==='expense'?'+ Novo gasto':moveType==='income'?'+ Nova receita':'+ Novo';document.getElementById('moveRecvBtn').style.display=moveType==='income'?'flex':'none';let recvPend=receivablesProjected(mk),recvHas=receivablesForMonth(mk).length>0,recvBtn=document.getElementById('moveRecvBtn');recvBtn.classList.toggle('done',recvHas&&recvPend<=0.004);document.getElementById('moveRecvSub').textContent=recvPend>0.004?`Faltam ${brl(recvPend)}`:(recvHas?'Tudo recebido este mês 🎉':'Toque para criar uma meta');
   let rows=all.filter(x=>moveType==='all'||x.type===moveType).filter(x=>!moveQuery||normalizeText([x.desc,x.category,x.account||'',x.meta||'',(x.tags||[]).join(' '),String(x.value).replace('.',',')].join(' ')).includes(moveQuery)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id);
   document.getElementById('moveTypes').innerHTML=[['all','Todos'],['expense','Saídas'],['income','Entradas']].map(([k,l])=>`<button class="pill${moveType===k?' active':''}" onclick="setMoveType('${k}')">${l}</button>`).join('');
-  let inc=rows.filter(x=>x.type==='income'&&!x.ignored).reduce((a,b)=>a+Number(b.value||0),0),exp=rows.filter(x=>x.type==='expense'&&!x.ignored).reduce((a,b)=>a+(b.refund?-Number(b.value||0):Number(b.value||0)),0);
+  let inc=rows.filter(x=>x.type==='income'&&!x.ignored).reduce((a,b)=>a+Number(b.value||0),0),exp=rows.filter(x=>x.type==='expense'&&!x.ignored).reduce((a,b)=>a+((b.refund||b.advance)?-Number(b.value||0):Number(b.value||0)),0);
   document.getElementById('moveTotals').textContent=all.length?`${rows.length} lançamento(s) · Entradas ${brl(inc)} · Saídas ${brl(exp)}`:'';
   list.innerHTML=rows.map(x=>x.kind==='tx'?txHtml(x.tx):entryRow(x,'')).join('')||emptyMoves(mk)
 }
@@ -761,11 +761,11 @@ function moveEntries(mk){
   let out=[];
   data.transactions.filter(x=>monthKey(x.date||'')===mk).forEach(x=>out.push({kind:'tx',tx:x,id:x.id,date:x.date||mk+'-01',type:x.type,value:Number(x.value||0),desc:x.desc,category:x.category,account:x.account,ignored:!!x.ignored,tags:x.tags||[],meta:x.receivableId?('🎯 '+((data.receivables.find(r=>r.id===x.receivableId)||{}).desc||'Recebimento')):''}));
   data.fixed.filter(x=>x.active!==false).forEach(x=>out.push({kind:'fixed',id:x.id,date:dueDateForMonth(mk,x.day),type:'expense',value:Number(x.value||0),desc:x.desc,category:x.category,meta:'🔁 Conta fixa · dia '+x.day+(isPaid('fixed',x.id,mk)?' · ✓ paga':'')}));
-  data.cardItems.filter(x=>x.month===mk).forEach(x=>{let c=data.cards.find(k=>k.id===x.cardId);out.push({kind:'card',id:x.id,date:x.date||mk+'-01',type:'expense',refund:!!x.refund,ignored:!!x.ignored,value:Number(x.value||0),desc:x.desc,category:x.category,meta:(x.refund?'↩️ Estorno · ':'💳 ')+(c?c.name:'Cartão')})});
+  data.cardItems.filter(x=>x.month===mk).forEach(x=>{let c=data.cards.find(k=>k.id===x.cardId);out.push({kind:'card',id:x.id,date:x.date||mk+'-01',type:'expense',refund:!!x.refund,advance:!!x.advance,ignored:!!x.ignored,value:Number(x.value||0),desc:x.desc,category:x.category,meta:(x.refund?'↩️ Estorno · ':(x.advance?'💵 Antecipação · ':'💳 '))+(c?c.name:'Cartão')})});
   data.cards.forEach(c=>{let b=invoiceBase(c.id,mk);if(b>0)out.push({kind:'base',id:c.id,date:dueDateForMonth(mk,c.dueDay),type:'expense',value:b,desc:'Fatura '+c.name+' (valor acumulado)',category:'',meta:'🧾 Valor informado na fatura'})});
   return out
 }
-function entryRow(e,pre){let d=new Date(e.date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}),ic=e.refund?'↩️':(e.kind==='base'?'🧾':icon(e.category)),sub=[e.category&&e.category!==e.desc?esc(e.category):'',d,e.meta?esc(e.meta):'',e.account?esc(e.account):'',e.ignored?'🚫 Ignorado':''].filter(Boolean).join(' · '),isCredit=e.type==='income'||e.refund;return `<div class="tx${e.ignored?' ignored':''}" style="grid-template-columns:46px 1fr auto" onclick="${pre}editEntry('${e.kind}',${e.id})"><div class="icon">${ic}</div><div><div class="name">${esc(e.desc)}</div><div class="meta">${sub}</div></div><div class="amount ${isCredit?'income':'expense'}">${isCredit?'+':'−'} ${brl(e.value)}</div></div>`}
+function entryRow(e,pre){let d=new Date(e.date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}),ic=e.refund?'↩️':(e.advance?'💵':(e.kind==='base'?'🧾':icon(e.category))),sub=[e.category&&e.category!==e.desc?esc(e.category):'',d,e.meta?esc(e.meta):'',e.account?esc(e.account):'',e.ignored?'🚫 Ignorado':''].filter(Boolean).join(' · '),isCredit=e.type==='income'||e.refund||e.advance;return `<div class="tx${e.ignored?' ignored':''}" style="grid-template-columns:46px 1fr auto" onclick="${pre}editEntry('${e.kind}',${e.id})"><div class="icon">${ic}</div><div><div class="name">${esc(e.desc)}</div><div class="meta">${sub}</div></div><div class="amount ${isCredit?'income':'expense'}">${isCredit?'+':'−'} ${brl(e.value)}</div></div>`}
 function editEntry(kind,id){
   if(kind==='tx')return openEditTransaction(id);
   if(kind==='fixed')return openFixed(id);
@@ -927,20 +927,31 @@ function tryUnlock(){
 }
 
 // ===== Estorno rápido direto na fatura (v0.28) =====
-function openQuickRefund(){
+let quickKind='refund';
+function openQuickRefund(){openQuickCredit('refund')}
+function openQuickAdvance(){openQuickCredit('advance')}
+function openQuickCredit(kind){
   let c=selectedCard();if(!c)return showToast('Cadastre um cartão primeiro');
-  document.getElementById('qrInfo').textContent=`${c.name} · fatura de ${monthLabel(currentInvoiceMonth)} · hoje está em ${brl(invoiceTotalFor(c.id,currentInvoiceMonth))}`;
+  quickKind=kind;
+  let isAdv=kind==='advance';
+  document.getElementById('qrTitle').textContent=isAdv?'Antecipar pagamento':'Estorno na fatura';
+  document.getElementById('qrSaveBtn').textContent=isAdv?'Registrar antecipação':'Registrar estorno';
+  document.getElementById('qrDesc').placeholder=isAdv?'Ex.: Paguei adiantado no Nubank':'Ex.: Estorno Nubank';
+  document.getElementById('qrInfo').textContent=`${c.name} · fatura de ${monthLabel(currentInvoiceMonth)} · hoje está em ${brl(invoiceTotalFor(c.id,currentInvoiceMonth))}`+(isAdv?'. O valor sai da fatura, como se você já tivesse pago essa parte adiantado.':'.');
   document.getElementById('qrValue').value='';document.getElementById('qrDesc').value='';
   document.getElementById('quickRefundOverlay').classList.add('show');
   setTimeout(()=>document.getElementById('qrValue').focus(),60)
 }
 function saveQuickRefund(){
   let c=selectedCard();if(!c)return closeSheets();
-  let value=parseMoney(document.getElementById('qrValue').value);if(!value)return showToast('Informe o valor do estorno');
-  let desc=document.getElementById('qrDesc').value.trim()||'Estorno';
-  data.cardItems.push({id:Date.now(),cardId:c.id,month:currentInvoiceMonth,value,desc,category:'Outros',date:iso(new Date()),refund:true});
+  let value=parseMoney(document.getElementById('qrValue').value);let isAdv=quickKind==='advance';
+  if(!value)return showToast(isAdv?'Informe o valor antecipado':'Informe o valor do estorno');
+  let desc=document.getElementById('qrDesc').value.trim()||(isAdv?'Antecipação':'Estorno');
+  let item={id:Date.now(),cardId:c.id,month:currentInvoiceMonth,value,desc,category:'Outros',date:iso(new Date())};
+  if(isAdv)item.advance=true;else item.refund=true;
+  data.cardItems.push(item);
   save();closeSheets();
-  showToast(`Estorno registrado · fatura agora em ${brl(invoiceTotalFor(c.id,currentInvoiceMonth))}`)
+  showToast(`${isAdv?'Antecipação registrada':'Estorno registrado'} · fatura agora em ${brl(invoiceTotalFor(c.id,currentInvoiceMonth))}`)
 }
 
 // ===== Mapa de calor: gasto por dia (v0.31) =====
@@ -973,7 +984,7 @@ function renderHeatmap(){
   }else note.style.display='none'
 }
 function openHeatDay(mk,d){
-  let dateStr=`${mk}-${String(d).padStart(2,'0')}`,items=moveEntries(mk).filter(e=>e.type==='expense'&&e.date===dateStr&&!e.ignored),total=items.reduce((a,e)=>a+(e.refund?-e.value:e.value),0);
+  let dateStr=`${mk}-${String(d).padStart(2,'0')}`,items=moveEntries(mk).filter(e=>e.type==='expense'&&e.date===dateStr&&!e.ignored),total=items.reduce((a,e)=>a+((e.refund||e.advance)?-e.value:e.value),0);
   document.getElementById('heatDayTitle').textContent=new Date(dateStr+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
   document.getElementById('heatDayInfo').textContent=`Total do dia: ${brl(total)}`;
   document.getElementById('heatDayList').innerHTML=items.map(e=>entryRow(e,'closeSheets();')).join('')||'<div class="empty">Nenhum gasto neste dia.</div>';
@@ -989,7 +1000,7 @@ function weekRangeLabel(startIso){let start=new Date(startIso+'T12:00:00'),end=n
 function weekSpend(startIso){
   let end=iso((()=>{let d=new Date(startIso+'T12:00:00');d.setDate(d.getDate()+6);return d})()),byMethod={},add=(label,v)=>{byMethod[label]=(byMethod[label]||0)+v};
   data.transactions.filter(x=>x.type==='expense'&&!x.ignored&&x.date>=startIso&&x.date<=end).forEach(x=>add(x.account||'Outro',Number(x.value||0)));
-  data.cardItems.filter(x=>!x.ignored&&!x.refund&&x.date&&x.date>=startIso&&x.date<=end).forEach(x=>{let c=data.cards.find(k=>k.id===x.cardId);add(c?c.name:'Cartão de crédito',Number(x.value||0))});
+  data.cardItems.filter(x=>!x.ignored&&!x.refund&&!x.advance&&x.date&&x.date>=startIso&&x.date<=end).forEach(x=>{let c=data.cards.find(k=>k.id===x.cardId);add(c?c.name:'Cartão de crédito',Number(x.value||0))});
   let total=Object.values(byMethod).reduce((a,b)=>a+b,0);
   return{total,byMethod,start:startIso,end}
 }
@@ -1021,12 +1032,15 @@ function invoiceMonthForDate(card,dateStr){
 }
 function reorganizeByClosing(){
   let c=selectedCard();if(!c||!c.closingDay)return;
-  let items=data.cardItems.filter(x=>x.cardId===c.id),moves=[];
+  // parcelas (x.group) já têm sua fatura calculada pela própria sequência de parcelamento;
+  // recalcular a partir da data delas aqui causaria um bug (empurra 1 mês a mais a cada parcela).
+  // então o Reorganizar só mexe em gastos avulsos, sem parcela.
+  let items=data.cardItems.filter(x=>x.cardId===c.id&&!x.group),moves=[];
   items.forEach(x=>{if(!x.date)return;let target=invoiceMonthForDate(c,x.date);if(target&&target!==x.month)moves.push({item:x,target})});
-  if(!moves.length)return showToast('Nenhum gasto precisava mudar de fatura');
-  if(!confirm(`Isso vai mover ${moves.length} gasto(s) para a fatura certa, com base na data de cada um e no fechamento dia ${c.closingDay}. Continuar?`))return;
+  if(!moves.length)return showToast('Nenhum gasto avulso precisava mudar de fatura. Compras parceladas não são mexidas aqui.');
+  if(!confirm(`Isso vai mover ${moves.length} gasto(s) avulso(s) (sem parcela) para a fatura certa, com base na data de cada um e no fechamento dia ${c.closingDay}. Compras parceladas não são afetadas. Continuar?`))return;
   moves.forEach(({item,target})=>{item.month=target});
-  save();renderCards();showToast(`${moves.length} gasto(s) movido(s) para a fatura certa`)
+  save();renderCards();showToast(`${moves.length} gasto(s) avulso(s) movido(s) para a fatura certa`)
 }
 function openVoice(){voiceDraft=null;document.getElementById('voiceSave').style.display='none';document.getElementById('transcript').textContent='Ex.: “Gastei 87 reais no supermercado” ou “quanto gastei este mês?”';document.getElementById('voiceStatus').textContent='Toque e fale um lançamento ou uma pergunta.';document.getElementById('voiceOverlay').classList.add('show')}
 function applyVoiceText(t){let btn=document.getElementById('micBtn');btn.classList.remove('listening');document.getElementById('transcript').textContent=t;if(isFinancialQuestion(t)){let answer=financialAnswer(t);voiceDraft=null;document.getElementById('voiceSave').style.display='none';if(answer){document.getElementById('voiceStatus').textContent=answer;document.getElementById('transcript').textContent=`Você: ${t}\n\nMeu Dinheiro: ${answer}`;speakText(answer)}else document.getElementById('voiceStatus').textContent='Ainda não consegui responder essa pergunta.';return}voiceDraft=parseVoice(t);document.getElementById('voiceStatus').textContent=voiceDraft?`Entendi: ${voiceDraft.type==='income'?'entrada':'saída'} de ${brl(voiceDraft.value)}.`:'Não consegui entender. Tente fazer um lançamento ou uma pergunta sobre seus gastos.';document.getElementById('voiceSave').style.display=voiceDraft?'block':'none'}
