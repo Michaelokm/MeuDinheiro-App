@@ -215,7 +215,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.35 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.36 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -957,7 +957,7 @@ function weekRangeLabel(startIso){let start=new Date(startIso+'T12:00:00'),end=n
 function weekSpend(startIso){
   let end=iso((()=>{let d=new Date(startIso+'T12:00:00');d.setDate(d.getDate()+6);return d})()),byMethod={},add=(label,v)=>{byMethod[label]=(byMethod[label]||0)+v};
   data.transactions.filter(x=>x.type==='expense'&&!x.ignored&&x.date>=startIso&&x.date<=end).forEach(x=>add(x.account||'Outro',Number(x.value||0)));
-  data.cardItems.filter(x=>!x.ignored&&x.date&&x.date>=startIso&&x.date<=end).forEach(x=>{let c=data.cards.find(k=>k.id===x.cardId);add(c?c.name:'Cartão de crédito',x.refund?-Number(x.value||0):Number(x.value||0))});
+  data.cardItems.filter(x=>!x.ignored&&!x.refund&&x.date&&x.date>=startIso&&x.date<=end).forEach(x=>{let c=data.cards.find(k=>k.id===x.cardId);add(c?c.name:'Cartão de crédito',Number(x.value||0))});
   let total=Object.values(byMethod).reduce((a,b)=>a+b,0);
   return{total,byMethod,start:startIso,end}
 }
@@ -976,7 +976,7 @@ function renderWeekSummary(){
   buildWeekStrip();
   let{total,byMethod}=weekSpend(currentWeekStart);
   let rows=Object.entries(byMethod).sort((a,b)=>b[1]-a[1]).map(([label,v])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line)"><span>${esc(label)}</span><b>${brl(v)}</b></div>`).join('');
-  card.innerHTML=`<div style="text-align:center;padding:2px 0 14px"><div class="mini-note">Total gasto na semana · ${weekRangeLabel(currentWeekStart)}</div><div style="font-size:30px;font-weight:800;margin-top:4px">${brl(total)}</div></div>`+(rows||'<div class="empty">Nenhum gasto nessa semana.</div>')
+  card.innerHTML=`<div style="text-align:center;padding:2px 0 14px"><div class="mini-note">Total gasto na semana · ${weekRangeLabel(currentWeekStart)}</div><div style="font-size:30px;font-weight:800;margin-top:4px">${brl(total)}</div><div class="mini-note" style="margin-top:4px">Conta só o que foi registrado como Gasto. Estornos não entram aqui.</div></div>`+(rows||'<div class="empty">Nenhum gasto nessa semana.</div>')
 }
 function openWeekSummaryDirect(){go('plan');setTimeout(()=>{let el=document.getElementById('weekSummarySection');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},80)}
 function openVoice(){voiceDraft=null;document.getElementById('voiceSave').style.display='none';document.getElementById('transcript').textContent='Ex.: “Gastei 87 reais no supermercado” ou “quanto gastei este mês?”';document.getElementById('voiceStatus').textContent='Toque e fale um lançamento ou uma pergunta.';document.getElementById('voiceOverlay').classList.add('show')}
