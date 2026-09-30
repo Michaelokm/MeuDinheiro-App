@@ -186,7 +186,7 @@
     <div id="cardsContent" style="display:none">
       <div class="card-tabs" id="cardTabs"></div>
       <div class="credit-hero">
-        <div class="credit-top"><div><div class="credit-name" id="selectedCardName">Cartão</div><div class="credit-sub" id="selectedCardMeta"></div></div><button class="iconbtn" onclick="deleteSelectedCard()" aria-label="Excluir cartão">🗑</button></div>
+        <div class="credit-top"><div><div class="credit-name" id="selectedCardName">Cartão</div><div class="credit-sub" id="selectedCardMeta"></div></div><div style="display:flex;gap:6px"><button class="iconbtn" onclick="openCard(currentCardId)" aria-label="Editar cartão">✏️</button><button class="iconbtn" onclick="deleteSelectedCard()" aria-label="Excluir cartão">🗑</button></div></div>
         <div class="invoice-label" id="invoiceMonthLabel">Fatura</div><div class="invoice-total" id="invoiceTotal">R$ 0,00</div>
         <div class="credit-sub" id="invoiceLimitInfo"></div>
         <div class="credit-sub" id="invoiceStatus"></div>
@@ -197,6 +197,7 @@
       <button class="save" id="invoicePaidBtn" onclick="toggleCurrentInvoicePaid()">✓ Marcar fatura como paga</button>
       <button class="ghost" onclick="copyPreviousInvoice()">📋 Copiar fatura anterior</button>
       <div class="credit-actions"><button onclick="openInvoiceBase()">✏️ Valor da fatura</button><button onclick="openQuickRefund()">↩️ Estorno</button><button class="primary" onclick="openCardItem()">＋ Acrescentar gasto</button></div>
+      <button class="ghost" id="reorganizeBtn" style="display:none" onclick="reorganizeByClosing()">🔄 Reorganizar gastos pela data (usa o fechamento)</button>
       <p class="mini-note">Você pode colocar primeiro o valor que já veio acumulado na fatura e depois ir acrescentando novos gastos naquele mês. Isso não altera seus lançamentos comuns automaticamente. Toque em um gasto da fatura para editar.</p>
       <div class="section"><h2>Planejamento</h2><button onclick="go('plan')">Ver mês</button></div>
     </div>
@@ -215,7 +216,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.36 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.37 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -253,12 +254,14 @@
 </div></div>
 
 <div class="overlay" id="cardOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
-  <div class="handle"></div><h3>Novo cartão</h3>
+  <div class="handle"></div><h3 id="cardTitle">Novo cartão</h3>
   <div class="field"><label>Nome do cartão</label><input id="cardName" placeholder="Ex.: Nubank, Inter, Itaú" /></div>
-  <div class="row2"><div class="field"><label>Vencimento</label><input id="cardDueDay" type="number" min="1" max="31" placeholder="10" /></div><div class="field"><label>Mês da fatura</label><input id="cardInvoiceMonth" type="month" /></div></div>
-  <div class="field"><label>Valor atual da fatura</label><div class="money-input"><span>R$</span><input id="cardInvoiceValue" inputmode="decimal" placeholder="0,00" /></div></div>
-  <p class="mini-note">Coloque aqui o valor que a fatura já tem. Depois você pode ir acrescentando novas compras normalmente.</p>
-  <button class="save" onclick="saveCard()">Salvar cartão e fatura</button><button class="ghost" onclick="closeSheets()">Cancelar</button>
+  <div class="row2"><div class="field"><label>Fechamento (opcional)</label><input id="cardClosingDay" type="number" min="1" max="31" placeholder="Ex.: 3" /></div><div class="field"><label>Vencimento</label><input id="cardDueDay" type="number" min="1" max="31" placeholder="10" /></div></div>
+  <p class="mini-note" style="margin-top:-6px">Se preencher o fechamento, o app calcula sozinho em qual fatura cada compra entra, pela data dela. Sem fechamento, você escolhe o mês manualmente como hoje.</p>
+  <div class="field" id="cardInvoiceMonthField"><label>Mês da fatura</label><input id="cardInvoiceMonth" type="month" /></div>
+  <div class="field" id="cardInvoiceValueField"><label>Valor atual da fatura</label><div class="money-input"><span>R$</span><input id="cardInvoiceValue" inputmode="decimal" placeholder="0,00" /></div></div>
+  <p class="mini-note" id="cardInvoiceValueNote">Coloque aqui o valor que a fatura já tem. Depois você pode ir acrescentando novas compras normalmente.</p>
+  <button class="save" onclick="saveCard()" id="cardSaveBtn">Salvar cartão e fatura</button><button class="ghost" onclick="closeSheets()">Cancelar</button>
 </div></div>
 
 <div class="overlay" id="invoiceBaseOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
@@ -507,8 +510,35 @@ function syncNativeReminders(){
   }catch(e){}
 }
 
-function openCard(){document.getElementById('cardName').value='';document.getElementById('cardDueDay').value='';document.getElementById('cardInvoiceMonth').value=currentInvoiceMonth||iso(new Date()).slice(0,7);document.getElementById('cardInvoiceValue').value='';document.getElementById('cardOverlay').classList.add('show')}
-function saveCard(){let name=document.getElementById('cardName').value.trim(),due=Number(document.getElementById('cardDueDay').value),month=document.getElementById('cardInvoiceMonth').value||iso(new Date()).slice(0,7),invoiceValue=parseMoney(document.getElementById('cardInvoiceValue').value);if(!name)return showToast('Informe o nome do cartão');if(!Number.isInteger(due)||due<1||due>31)return showToast('Informe um vencimento entre 1 e 31');let id=Date.now();data.cards.push({id,name,dueDay:due,limit:0});if(invoiceValue>0)data.cardInvoices.push({id:id+1,cardId:id,month,baseValue:invoiceValue});currentCardId=id;currentInvoiceMonth=month;dashboardMonth=month;localStorage.setItem('md_dashboard_month',dashboardMonth);save();closeSheets();go('cards');showToast(invoiceValue>0?'Cartão e fatura salvos':'Cartão salvo')}
+let editingCardId=null;
+function openCard(id){
+  editingCardId=id||null;let c=id?data.cards.find(x=>x.id===id):null;
+  document.getElementById('cardTitle').textContent=c?'Editar cartão':'Novo cartão';
+  document.getElementById('cardName').value=c?c.name:'';
+  document.getElementById('cardClosingDay').value=c&&c.closingDay?c.closingDay:'';
+  document.getElementById('cardDueDay').value=c?c.dueDay:'';
+  document.getElementById('cardInvoiceMonthField').style.display=c?'none':'block';
+  document.getElementById('cardInvoiceValueField').style.display=c?'none':'block';
+  document.getElementById('cardInvoiceValueNote').style.display=c?'none':'block';
+  document.getElementById('cardSaveBtn').textContent=c?'Salvar alterações':'Salvar cartão e fatura';
+  if(!c){document.getElementById('cardInvoiceMonth').value=currentInvoiceMonth||iso(new Date()).slice(0,7);document.getElementById('cardInvoiceValue').value=''}
+  document.getElementById('cardOverlay').classList.add('show')
+}
+function saveCard(){
+  let name=document.getElementById('cardName').value.trim(),due=Number(document.getElementById('cardDueDay').value),closingRaw=document.getElementById('cardClosingDay').value,closingDay=closingRaw?Number(closingRaw):null;
+  if(!name)return showToast('Informe o nome do cartão');
+  if(!Number.isInteger(due)||due<1||due>31)return showToast('Informe um vencimento entre 1 e 31');
+  if(closingDay!==null&&(!Number.isInteger(closingDay)||closingDay<1||closingDay>31))return showToast('Fechamento precisa ser um dia entre 1 e 31');
+  if(editingCardId){
+    let c=data.cards.find(x=>x.id===editingCardId);if(!c)return closeSheets();
+    c.name=name;c.dueDay=due;if(closingDay!==null)c.closingDay=closingDay;else delete c.closingDay;
+    editingCardId=null;save();closeSheets();showToast('Cartão atualizado');return
+  }
+  let month=document.getElementById('cardInvoiceMonth').value||iso(new Date()).slice(0,7),invoiceValue=parseMoney(document.getElementById('cardInvoiceValue').value),id=Date.now();
+  let card={id,name,dueDay:due,limit:0};if(closingDay!==null)card.closingDay=closingDay;
+  data.cards.push(card);if(invoiceValue>0)data.cardInvoices.push({id:id+1,cardId:id,month,baseValue:invoiceValue});
+  currentCardId=id;currentInvoiceMonth=month;dashboardMonth=month;localStorage.setItem('md_dashboard_month',dashboardMonth);save();closeSheets();go('cards');showToast(invoiceValue>0?'Cartão e fatura salvos':'Cartão salvo')
+}
 function selectedCard(){return data.cards.find(x=>x.id===currentCardId)||data.cards[0]||null}
 function invoiceBase(cardId,month){let x=data.cardInvoices.find(i=>i.cardId===cardId&&i.month===month);return x?Number(x.baseValue||0):0}
 function invoiceItems(cardId,month){return data.cardItems.filter(i=>i.cardId===cardId&&i.month===month)}
@@ -560,19 +590,21 @@ function setCiKind(k){ciKind=k;document.getElementById('ciTypeExpense').classLis
 function setCiMore(open){document.getElementById('ciMoreBox').style.display=open?'grid':'none';document.getElementById('ciMoreBtn').style.display=open?'none':'block'}
 function toggleCiMore(){setCiMore(true)}
 function saveCardItem(){let c=selectedCard();if(!c)return;let value=parseMoney(document.getElementById('ciValue').value),desc=document.getElementById('ciDesc').value.trim();if(!value||!desc)return showToast('Preencha valor e descrição');let category=document.getElementById('ciCategory').value||'Outros',date=document.getElementById('ciDate').value||iso(new Date()),n=Math.round(Number(document.getElementById('ciInstallments').value)||1);n=Math.min(48,Math.max(1,n));
-  if(editingCardItemId!==null){let it=data.cardItems.find(x=>x.id===editingCardItemId);editingCardItemId=null;if(!it)return showToast('Gasto não encontrado');let changedCat=it.category!==category;it.value=value;it.desc=desc;it.category=category;it.date=date;it.refund=ciKind==='refund';it.ignored=ciIgnored;if(it.group&&changedCat)data.cardItems.forEach(x=>{if(x.group===it.group)x.category=category});save();closeSheets();showToast(it.group&&changedCat?'Categoria aplicada a todas as parcelas':(it.refund?'Estorno atualizado':'Gasto atualizado'));return}
+  if(editingCardItemId!==null){let it=data.cardItems.find(x=>x.id===editingCardItemId);editingCardItemId=null;if(!it)return showToast('Gasto não encontrado');let changedCat=it.category!==category;it.value=value;it.desc=desc;it.category=category;it.date=date;it.refund=ciKind==='refund';it.ignored=ciIgnored;let auto=invoiceMonthForDate(c,date),movedMsg='';if(auto&&auto!==it.month){it.month=auto;currentInvoiceMonth=auto;movedMsg=` · foi para a fatura de ${monthLabel(auto)}`}if(it.group&&changedCat)data.cardItems.forEach(x=>{if(x.group===it.group)x.category=category});save();closeSheets();showToast((it.group&&changedCat?'Categoria aplicada a todas as parcelas':(it.refund?'Estorno atualizado':'Gasto atualizado'))+movedMsg);return}
   dashboardMonth=currentInvoiceMonth;localStorage.setItem('md_dashboard_month',dashboardMonth);
-  if(ciKind==='refund'){data.cardItems.push({id:Date.now(),cardId:c.id,month:currentInvoiceMonth,value,desc,category,date,refund:true,ignored:ciIgnored});save();closeSheets();showToast('Estorno registrado');return}
-  if(n===1){data.cardItems.push({id:Date.now(),cardId:c.id,month:currentInvoiceMonth,value,desc,category,date,ignored:ciIgnored});save();closeSheets();showToast(limitWarning(category,currentInvoiceMonth)||'Gasto acrescentado à fatura');return}
+  let targetMonth=invoiceMonthForDate(c,date)||currentInvoiceMonth,movedNote=targetMonth!==currentInvoiceMonth?` · foi para a fatura de ${monthLabel(targetMonth)} (fecha dia ${c.closingDay})`:'';
+  if(targetMonth!==currentInvoiceMonth)currentInvoiceMonth=targetMonth;
+  if(ciKind==='refund'){data.cardItems.push({id:Date.now(),cardId:c.id,month:targetMonth,value,desc,category,date,refund:true,ignored:ciIgnored});save();closeSheets();showToast('Estorno registrado'+movedNote);return}
+  if(n===1){data.cardItems.push({id:Date.now(),cardId:c.id,month:targetMonth,value,desc,category,date,ignored:ciIgnored});save();closeSheets();showToast((limitWarning(category,targetMonth)||'Gasto acrescentado à fatura')+movedNote);return}
   let group=Date.now(),cents=Math.round(value*100),base=Math.floor(cents/n),rest=cents-base*n,day=Number(date.slice(8,10))||1;
-  for(let i=0;i<n;i++){let month=monthPlus(currentInvoiceMonth,i);data.cardItems.push({id:group+i,cardId:c.id,month,value:(base+(i<rest?1:0))/100,desc:`${desc} (${i+1}/${n})`,category,date:i===0?date:dueDateForMonth(month,day),group,inst:i+1,instTotal:n})}
-  save();closeSheets();showToast(limitWarning(category,currentInvoiceMonth)||`${n}x de ${brl(base/100)} nas próximas faturas`)}
+  for(let i=0;i<n;i++){let month=monthPlus(targetMonth,i);data.cardItems.push({id:group+i,cardId:c.id,month,value:(base+(i<rest?1:0))/100,desc:`${desc} (${i+1}/${n})`,category,date:i===0?date:dueDateForMonth(month,day),group,inst:i+1,instTotal:n})}
+  save();closeSheets();showToast((limitWarning(category,targetMonth)||`${n}x de ${brl(base/100)} nas próximas faturas`)+movedNote)}
 function openEditCardItem(id){let it=data.cardItems.find(x=>x.id===id);if(!it)return;editingCardItemId=id;cats('expense',document.getElementById('ciCategory'));document.getElementById('ciTitle').textContent='Editar gasto da fatura';document.getElementById('ciValue').value=Number(it.value||0).toFixed(2).replace('.',',');document.getElementById('ciDesc').value=it.desc||'';let sel=document.getElementById('ciCategory');sel.value=it.category;sel.dataset.prev=sel.value;document.getElementById('ciDate').value=it.date||iso(new Date());setCiMore(true);setCiKind(it.refund?'refund':'expense');document.getElementById('ciInstBox').style.display='none';ciIgnored=!!it.ignored;document.getElementById('ciIgnoreSwitch').classList.toggle('on',ciIgnored);let note=document.getElementById('ciEditNote');if(it.group){note.textContent=`Compra parcelada (${it.inst||'?'}/${it.instTotal||'?'}). Valor e data mudam só esta parcela; a categoria muda em todas.`;note.style.display='block'}else note.style.display='none';document.getElementById('ciDeleteBtn').style.display='block';document.getElementById('cardItemOverlay').classList.add('show')}
 function deleteEditingCardItem(){if(editingCardItemId===null)return;let id=editingCardItemId;closeSheets();editingCardItemId=null;deleteCardItem(id)}
 function deleteCardItem(id){let it=data.cardItems.find(x=>x.id===id);if(!it)return;if(it.group){if(confirm('Essa compra é parcelada. Remover TODAS as parcelas? (Cancelar = escolher só esta)')){data.cardItems=data.cardItems.filter(x=>x.group!==it.group);save();showToast('Compra parcelada removida');return}if(confirm('Remover só esta parcela?')){data.cardItems=data.cardItems.filter(x=>x.id!==id);save()}return}if(confirm('Remover este gasto da fatura?')){data.cardItems=data.cardItems.filter(x=>x.id!==id);save()}}
 function deleteSelectedCard(){let c=selectedCard();if(!c)return;if(confirm(`Excluir o cartão ${c.name} e todas as faturas dele?`)){data.cards=data.cards.filter(x=>x.id!==c.id);data.cardInvoices=data.cardInvoices.filter(x=>x.cardId!==c.id);data.cardItems=data.cardItems.filter(x=>x.cardId!==c.id);currentCardId=data.cards[0]?.id||null;save();showToast('Cartão excluído')}}
 function monthLabel(k){let [y,m]=k.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}
-function renderCards(){let empty=document.getElementById('cardsEmpty'),content=document.getElementById('cardsContent');if(!empty||!content)return;if(!data.cards.length){empty.style.display='block';content.style.display='none';return}empty.style.display='none';content.style.display='block';if(!currentCardId||!data.cards.some(c=>c.id===currentCardId))currentCardId=data.cards[0].id;let c=selectedCard();document.getElementById('cardTabs').innerHTML=data.cards.map(x=>`<button class="card-chip${x.id===c.id?' active':''}" onclick="setCard(${x.id})">💳 ${esc(x.name)}</button>`).join('');document.getElementById('selectedCardName').textContent=c.name;document.getElementById('selectedCardMeta').textContent=`Vence dia ${c.dueDay}`;let total=invoiceTotalFor(c.id,currentInvoiceMonth),paid=isPaid('card',c.id,currentInvoiceMonth);document.getElementById('invoiceMonthLabel').textContent=`Fatura de ${monthLabel(currentInvoiceMonth)}`;document.getElementById('invoiceTotal').textContent=brl(total);document.getElementById('invoiceLimitInfo').textContent='Edite o valor atual ou acrescente novas compras abaixo.';document.getElementById('invoiceStatus').textContent=paid?`✓ ${paidLabel('card',c.id,currentInvoiceMonth)}`:`Pendente · vence dia ${c.dueDay}`;document.getElementById('invoiceStatus').classList.toggle('paid-sub',paid);let payBtn=document.getElementById('invoicePaidBtn');payBtn.textContent=paid?'↩ Desmarcar como paga':'✓ Marcar fatura como paga';payBtn.classList.toggle('paid-btn',paid);buildInvoiceMonths();let base=invoiceBase(c.id,currentInvoiceMonth),items=[...invoiceItems(c.id,currentInvoiceMonth)].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id),rows='';if(base>0)rows+=`<div class="invoice-item"><div class="ii">🧾</div><div><div class="ititle">Valor já acumulado</div><div class="isub">Base informada para esta fatura</div></div><b>${brl(base)}</b><span></span></div>`;rows+=items.map(x=>`<div class="invoice-item${x.ignored?' ignored':''}" style="cursor:pointer" onclick="openEditCardItem(${x.id})"><div class="ii">${x.refund?'↩️':icon(x.category)}</div><div><div class="ititle">${esc(x.desc)}</div><div class="isub">${esc(x.category)}${x.refund?' · Estorno':''}${x.ignored?' · 🚫 Ignorado':''} · ${new Date((x.date||iso(new Date()))+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</div></div><b class="${x.refund?'refund':''}">${x.refund?'+ ':''}${brl(x.value)}</b><button class="idel" onclick="event.stopPropagation();deleteCardItem(${x.id})">×</button></div>`).join('');document.getElementById('invoiceList').innerHTML=rows||'<div class="empty">Nenhum valor nesta fatura ainda.<br>Defina o valor atual ou acrescente um gasto.</div>'}
+function renderCards(){let empty=document.getElementById('cardsEmpty'),content=document.getElementById('cardsContent');if(!empty||!content)return;if(!data.cards.length){empty.style.display='block';content.style.display='none';return}empty.style.display='none';content.style.display='block';if(!currentCardId||!data.cards.some(c=>c.id===currentCardId))currentCardId=data.cards[0].id;let c=selectedCard();document.getElementById('cardTabs').innerHTML=data.cards.map(x=>`<button class="card-chip${x.id===c.id?' active':''}" onclick="setCard(${x.id})">💳 ${esc(x.name)}</button>`).join('');document.getElementById('selectedCardName').textContent=c.name;document.getElementById('selectedCardMeta').textContent=`Vence dia ${c.dueDay}`;let total=invoiceTotalFor(c.id,currentInvoiceMonth),paid=isPaid('card',c.id,currentInvoiceMonth);document.getElementById('invoiceMonthLabel').textContent=`Fatura de ${monthLabel(currentInvoiceMonth)}`;document.getElementById('invoiceTotal').textContent=brl(total);document.getElementById('invoiceLimitInfo').textContent='Edite o valor atual ou acrescente novas compras abaixo.';document.getElementById('invoiceStatus').textContent=paid?`✓ ${paidLabel('card',c.id,currentInvoiceMonth)}`:`Pendente · vence dia ${c.dueDay}`;document.getElementById('invoiceStatus').classList.toggle('paid-sub',paid);let payBtn=document.getElementById('invoicePaidBtn');payBtn.textContent=paid?'↩ Desmarcar como paga':'✓ Marcar fatura como paga';payBtn.classList.toggle('paid-btn',paid);buildInvoiceMonths();let rBtn=document.getElementById('reorganizeBtn');if(rBtn)rBtn.style.display=c.closingDay?'block':'none';let base=invoiceBase(c.id,currentInvoiceMonth),items=[...invoiceItems(c.id,currentInvoiceMonth)].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id),rows='';if(base>0)rows+=`<div class="invoice-item"><div class="ii">🧾</div><div><div class="ititle">Valor já acumulado</div><div class="isub">Base informada para esta fatura</div></div><b>${brl(base)}</b><span></span></div>`;rows+=items.map(x=>`<div class="invoice-item${x.ignored?' ignored':''}" style="cursor:pointer" onclick="openEditCardItem(${x.id})"><div class="ii">${x.refund?'↩️':icon(x.category)}</div><div><div class="ititle">${esc(x.desc)}</div><div class="isub">${esc(x.category)}${x.refund?' · Estorno':''}${x.ignored?' · 🚫 Ignorado':''} · ${new Date((x.date||iso(new Date()))+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</div></div><b class="${x.refund?'refund':''}">${x.refund?'+ ':''}${brl(x.value)}</b><button class="idel" onclick="event.stopPropagation();deleteCardItem(${x.id})">×</button></div>`).join('');document.getElementById('invoiceList').innerHTML=rows||'<div class="empty">Nenhum valor nesta fatura ainda.<br>Defina o valor atual ou acrescente um gasto.</div>'}
 function deleteFixed(id){if(confirm('Remover esta conta fixa?')){data.fixed=data.fixed.filter(x=>x.id!==id);save()}}
 function monthKey(d){return d.slice(0,7)}
 function icon(cat){let m={'Alimentação':'🛒','Moradia':'🏠','Transporte':'🚕','Carro':'🚗','Moto':'🏍️','Pensão':'👤','Seguros':'🛡️','Saúde':'❤️','Educação':'🎓','Lazer':'🎬','Compras':'🛍️','Contas':'🧾','Salário':'💼','Freelance':'💻','Reembolso':'↩️','Venda':'🏷️','Rendimento':'📈'};return (data.catIcons&&data.catIcons[cat])||m[cat]||'•'}
@@ -979,6 +1011,23 @@ function renderWeekSummary(){
   card.innerHTML=`<div style="text-align:center;padding:2px 0 14px"><div class="mini-note">Total gasto na semana · ${weekRangeLabel(currentWeekStart)}</div><div style="font-size:30px;font-weight:800;margin-top:4px">${brl(total)}</div><div class="mini-note" style="margin-top:4px">Conta só o que foi registrado como Gasto. Estornos não entram aqui.</div></div>`+(rows||'<div class="empty">Nenhum gasto nessa semana.</div>')
 }
 function openWeekSummaryDirect(){go('plan');setTimeout(()=>{let el=document.getElementById('weekSummarySection');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},80)}
+
+// ===== Fechamento: descobre sozinho em qual fatura uma compra cai (v0.37) =====
+function invoiceMonthForDate(card,dateStr){
+  if(!card||!card.closingDay||!dateStr)return null;
+  let d=new Date(dateStr+'T12:00:00'),day=d.getDate(),y=d.getFullYear(),m=d.getMonth();
+  if(day>card.closingDay){m+=1;if(m>11){m=0;y+=1}}
+  return `${y}-${String(m+1).padStart(2,'0')}`
+}
+function reorganizeByClosing(){
+  let c=selectedCard();if(!c||!c.closingDay)return;
+  let items=data.cardItems.filter(x=>x.cardId===c.id),moves=[];
+  items.forEach(x=>{if(!x.date)return;let target=invoiceMonthForDate(c,x.date);if(target&&target!==x.month)moves.push({item:x,target})});
+  if(!moves.length)return showToast('Nenhum gasto precisava mudar de fatura');
+  if(!confirm(`Isso vai mover ${moves.length} gasto(s) para a fatura certa, com base na data de cada um e no fechamento dia ${c.closingDay}. Continuar?`))return;
+  moves.forEach(({item,target})=>{item.month=target});
+  save();renderCards();showToast(`${moves.length} gasto(s) movido(s) para a fatura certa`)
+}
 function openVoice(){voiceDraft=null;document.getElementById('voiceSave').style.display='none';document.getElementById('transcript').textContent='Ex.: “Gastei 87 reais no supermercado” ou “quanto gastei este mês?”';document.getElementById('voiceStatus').textContent='Toque e fale um lançamento ou uma pergunta.';document.getElementById('voiceOverlay').classList.add('show')}
 function applyVoiceText(t){let btn=document.getElementById('micBtn');btn.classList.remove('listening');document.getElementById('transcript').textContent=t;if(isFinancialQuestion(t)){let answer=financialAnswer(t);voiceDraft=null;document.getElementById('voiceSave').style.display='none';if(answer){document.getElementById('voiceStatus').textContent=answer;document.getElementById('transcript').textContent=`Você: ${t}\n\nMeu Dinheiro: ${answer}`;speakText(answer)}else document.getElementById('voiceStatus').textContent='Ainda não consegui responder essa pergunta.';return}voiceDraft=parseVoice(t);document.getElementById('voiceStatus').textContent=voiceDraft?`Entendi: ${voiceDraft.type==='income'?'entrada':'saída'} de ${brl(voiceDraft.value)}.`:'Não consegui entender. Tente fazer um lançamento ou uma pergunta sobre seus gastos.';document.getElementById('voiceSave').style.display=voiceDraft?'block':'none'}
 window.onNativeVoiceResult=t=>applyVoiceText(t);
