@@ -134,6 +134,7 @@
     <div class="monthstrip" id="monthStrip"></div>
     <input class="search" id="moveSearch" placeholder="🔍 Buscar por nome, categoria ou forma…" oninput="setMoveQuery(this.value)" />
     <div class="monthstrip" id="moveTypes"></div>
+    <div class="monthstrip" id="moveSources" style="margin-top:8px"></div>
     <div class="notify-note" id="moveTotals"></div>
     <div class="card" style="margin-top:12px" id="allList"></div>
   </section>
@@ -218,7 +219,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.42 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.43 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -665,7 +666,7 @@ function financialAnswer(t){let n=normalizeText(t),mk=resolveQuestionMonth(t),la
 }
 
 // ===== Relatórios, limites, metas e busca (v0.15) =====
-let moveQuery='',moveType='all',limitCat=null,editingGoalId=null,goalMoveState=null;
+let moveQuery='',moveType='all',moveSource='all',limitCat=null,editingGoalId=null,goalMoveState=null;
 function monthTotals(mk){let tx=data.transactions.filter(x=>monthKey(x.date||'')===mk&&!x.ignored),inc=tx.filter(x=>x.type==='income').reduce((a,b)=>a+Number(b.value||0),0)+receivablesProjected(mk),variable=tx.filter(x=>x.type==='expense').reduce((a,b)=>a+Number(b.value||0),0),fix=data.fixed.filter(x=>x.active!==false).reduce((a,b)=>a+Number(b.value||0),0),cards=currentCardsTotal(mk),out=variable+fix+cards;return{inc,variable,fix,cards,out,saldo:inc-out}}
 function monthCatTotals(mk){let cats={},add=(c,v)=>{c=c||'Outros';cats[c]=(cats[c]||0)+Number(v||0)};data.transactions.filter(x=>x.type==='expense'&&monthKey(x.date||'')===mk&&!x.ignored).forEach(x=>add(x.category,x.value));data.fixed.filter(x=>x.active!==false).forEach(x=>add(x.category,x.value));data.cardItems.filter(x=>x.month===mk&&!x.ignored).forEach(x=>add(x.category,(x.refund||x.advance)?-Number(x.value||0):x.value));let base=data.cards.reduce((sum,c)=>sum+invoiceBase(c.id,mk),0);return{cats,base}}
 function limitWarning(cat,mk){let lim=Number(data.limits[cat]||0);if(!lim)return'';let pct=Math.round((monthCatTotals(mk).cats[cat]||0)/lim*100);return pct>=100?`⚠️ ${cat}: ${pct}% do limite`:pct>=80?`⚠️ ${cat}: ${pct}% do limite`:''}
@@ -704,15 +705,29 @@ function saveGoal(){let name=document.getElementById('gName').value.trim(),targe
 function deleteGoal(id){let g=data.goals.find(x=>x.id===id);if(!g)return;if(confirm(`Excluir a meta "${g.name}"?`)){data.goals=data.goals.filter(x=>x.id!==id);save();showToast('Meta excluída')}}
 function openGoalMove(id,sign){let g=data.goals.find(x=>x.id===id);if(!g)return;goalMoveState={id,sign};document.getElementById('gmTitle').textContent=sign>0?'Guardar na meta':'Retirar da meta';document.getElementById('gmInfo').textContent=`${g.name} · guardado: ${brl(g.saved)} de ${brl(g.target)}`;document.getElementById('gmValue').value='';document.getElementById('goalMoveOverlay').classList.add('show')}
 function saveGoalMove(){if(!goalMoveState)return;let g=data.goals.find(x=>x.id===goalMoveState.id),v=parseMoney(document.getElementById('gmValue').value);if(!g||!v)return showToast('Informe um valor');let was=Number(g.saved||0)>=Number(g.target||0);g.saved=Math.max(0,Number(g.saved||0)+goalMoveState.sign*v);let msg=goalMoveState.sign>0?'Valor guardado':'Valor retirado';if(!was&&g.saved>=g.target)msg='🎉 Meta atingida!';goalMoveState=null;save();closeSheets();showToast(msg)}
-function openMoves(t){moveType=t||'all';moveQuery='';let box=document.getElementById('moveSearch');if(box)box.value='';go('moves');renderMoves()}
+function openMoves(t){moveType=t||'all';moveSource='all';moveQuery='';let box=document.getElementById('moveSearch');if(box)box.value='';go('moves');renderMoves()}
 function fabAdd(){openAdd(document.getElementById('moves').classList.contains('active')&&moveType==='income'?'income':'expense')}
 function setMoveQuery(v){moveQuery=normalizeText(v);renderMoves()}
-function setMoveType(t){moveType=t;renderMoves()}
+function setMoveType(t){moveType=t;moveSource='all';renderMoves()}
+function setMoveSource(s){moveSource=s;renderMoves()}
 function renderMoves(){
   let list=document.getElementById('allList');if(!list)return;
   let mk=dashboardMonth,all=moveEntries(mk);
   document.getElementById('moveTitle').textContent=moveType==='expense'?'Gastos':moveType==='income'?'Receitas':'Movimentações';document.getElementById('moveAddBtn').textContent=moveType==='expense'?'+ Novo gasto':moveType==='income'?'+ Nova receita':'+ Novo';document.getElementById('moveRecvBtn').style.display=moveType==='income'?'flex':'none';let recvPend=receivablesProjected(mk),recvHas=receivablesForMonth(mk).length>0,recvBtn=document.getElementById('moveRecvBtn');recvBtn.classList.toggle('done',recvHas&&recvPend<=0.004);document.getElementById('moveRecvSub').textContent=recvPend>0.004?`Faltam ${brl(recvPend)}`:(recvHas?'Tudo recebido este mês 🎉':'Toque para criar uma meta');
-  let rows=all.filter(x=>moveType==='all'||x.type===moveType).filter(x=>!moveQuery||normalizeText([x.desc,x.category,x.account||'',x.meta||'',(x.tags||[]).join(' '),String(x.value).replace('.',',')].join(' ')).includes(moveQuery)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id);
+  let byType=all.filter(x=>moveType==='all'||x.type===moveType);
+  let sourcesEl=document.getElementById('moveSources');
+  if(moveType==='income'){sourcesEl.style.display='none';moveSource='all'}
+  else{
+    sourcesEl.style.display='flex';
+    let counts={tx:0,fixed:0},cardCounts={};
+    byType.filter(x=>x.type==='expense').forEach(x=>{if(x.kind==='tx')counts.tx++;else if(x.kind==='fixed')counts.fixed++;else if(x.cardId!=null)cardCounts[x.cardId]=(cardCounts[x.cardId]||0)+1});
+    let chips=[`<button class="pill${moveSource==='all'?' active':''}" onclick="setMoveSource('all')">Tudo</button>`];
+    if(counts.tx>0)chips.push(`<button class="pill${moveSource==='tx'?' active':''}" onclick="setMoveSource('tx')">Lançamentos (${counts.tx})</button>`);
+    if(counts.fixed>0)chips.push(`<button class="pill${moveSource==='fixed'?' active':''}" onclick="setMoveSource('fixed')">🔁 Fixas (${counts.fixed})</button>`);
+    data.cards.forEach(c=>{if(cardCounts[c.id])chips.push(`<button class="pill${moveSource===('card'+c.id)?' active':''}" onclick="setMoveSource('card${c.id}')">💳 ${esc(c.name)} (${cardCounts[c.id]})</button>`)});
+    sourcesEl.innerHTML=chips.length>1?chips.join(''):''
+  }
+  let rows=byType.filter(x=>{if(moveSource==='all'||moveType==='income')return true;if(moveSource==='tx')return x.kind==='tx';if(moveSource==='fixed')return x.kind==='fixed';if(moveSource.startsWith('card'))return String(x.cardId)===moveSource.slice(4);return true}).filter(x=>!moveQuery||normalizeText([x.desc,x.category,x.account||'',x.meta||'',(x.tags||[]).join(' '),String(x.value).replace('.',',')].join(' ')).includes(moveQuery)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id);
   document.getElementById('moveTypes').innerHTML=[['all','Todos'],['expense','Saídas'],['income','Entradas']].map(([k,l])=>`<button class="pill${moveType===k?' active':''}" onclick="setMoveType('${k}')">${l}</button>`).join('');
   let inc=rows.filter(x=>x.type==='income'&&!x.ignored).reduce((a,b)=>a+Number(b.value||0),0),exp=rows.filter(x=>x.type==='expense'&&!x.ignored).reduce((a,b)=>a+((b.refund||b.advance)?-Number(b.value||0):Number(b.value||0)),0);
   document.getElementById('moveTotals').textContent=all.length?`${rows.length} lançamento(s) · Entradas ${brl(inc)} · Saídas ${brl(exp)}`:'';
@@ -784,8 +799,8 @@ function moveEntries(mk){
   let out=[];
   data.transactions.filter(x=>monthKey(x.date||'')===mk).forEach(x=>out.push({kind:'tx',tx:x,id:x.id,date:x.date||mk+'-01',type:x.type,value:Number(x.value||0),desc:x.desc,category:x.category,account:x.account,ignored:!!x.ignored,tags:x.tags||[],meta:x.receivableId?('🎯 '+((data.receivables.find(r=>r.id===x.receivableId)||{}).desc||'Recebimento')):''}));
   data.fixed.filter(x=>x.active!==false).forEach(x=>out.push({kind:'fixed',id:x.id,date:dueDateForMonth(mk,x.day),type:'expense',value:Number(x.value||0),desc:x.desc,category:x.category,meta:'🔁 Conta fixa · dia '+x.day+(isPaid('fixed',x.id,mk)?' · ✓ paga':'')}));
-  data.cardItems.filter(x=>x.month===mk).forEach(x=>{let c=data.cards.find(k=>k.id===x.cardId);out.push({kind:'card',id:x.id,date:x.date||mk+'-01',type:'expense',refund:!!x.refund,advance:!!x.advance,ignored:!!x.ignored,value:Number(x.value||0),desc:x.desc,category:x.category,meta:(x.refund?'↩️ Estorno · ':(x.advance?'💵 Antecipação · ':'💳 '))+(c?c.name:'Cartão')})});
-  data.cards.forEach(c=>{let b=invoiceBase(c.id,mk);if(b>0)out.push({kind:'base',id:c.id,date:dueDateForMonth(mk,c.dueDay),type:'expense',value:b,desc:'Fatura '+c.name+' (valor acumulado)',category:'',meta:'🧾 Valor informado na fatura'})});
+  data.cardItems.filter(x=>x.month===mk).forEach(x=>{let c=data.cards.find(k=>k.id===x.cardId);out.push({kind:'card',cardId:x.cardId,id:x.id,date:x.date||mk+'-01',type:'expense',refund:!!x.refund,advance:!!x.advance,ignored:!!x.ignored,value:Number(x.value||0),desc:x.desc,category:x.category,meta:(x.refund?'↩️ Estorno · ':(x.advance?'💵 Antecipação · ':'💳 '))+(c?c.name:'Cartão')})});
+  data.cards.forEach(c=>{let b=invoiceBase(c.id,mk);if(b>0)out.push({kind:'base',cardId:c.id,id:c.id,date:dueDateForMonth(mk,c.dueDay),type:'expense',value:b,desc:'Fatura '+c.name+' (valor acumulado)',category:'',meta:'🧾 Valor informado na fatura'})});
   return out
 }
 function entryRow(e,pre){let d=new Date(e.date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}),ic=e.refund?'↩️':(e.advance?'💵':(e.kind==='base'?'🧾':icon(e.category))),sub=[e.category&&e.category!==e.desc?esc(e.category):'',d,e.meta?esc(e.meta):'',e.account?esc(e.account):'',e.ignored?'🚫 Ignorado':''].filter(Boolean).join(' · '),isCredit=e.type==='income'||e.refund||e.advance;return `<div class="tx${e.ignored?' ignored':''}" style="grid-template-columns:46px 1fr auto" onclick="${pre}editEntry('${e.kind}',${e.id})"><div class="icon">${ic}</div><div><div class="name">${esc(e.desc)}</div><div class="meta">${sub}</div></div><div class="amount ${isCredit?'income':'expense'}">${isCredit?'+':'−'} ${brl(e.value)}</div></div>`}
