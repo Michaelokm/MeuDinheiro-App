@@ -101,6 +101,7 @@
         <div class="mini down"><span>Saídas previstas</span><strong id="expense">R$ 0,00</strong></div>
       </div>
       <div id="summaryBreakdown" style="margin-top:12px;color:var(--muted);font-size:12px;line-height:1.45"></div>
+      <button class="ghost" id="saveBalanceBtn" style="display:none;margin-top:12px" onclick="openSaveBalance()">💰 Guardar sobra numa meta</button>
     </div>
     <div class="monthstrip" id="homeMonthStrip" style="margin:12px 0 14px"></div>
     <div class="alertbox" id="limitAlert" onclick="go('plan')"></div>
@@ -219,7 +220,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.43 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.45 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -433,6 +434,20 @@
   <button class="ghost" onclick="closeSheets()">Fechar</button>
 </div></div>
 
+<div class="overlay" id="payPriorityOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
+  <div class="handle"></div><h3>💡 O que pagar primeiro</h3>
+  <p class="mini-note" id="ppInfo" style="margin-top:0"></p>
+  <div id="ppList"></div>
+  <button class="ghost" onclick="closeSheets()">Fechar</button>
+</div></div>
+
+<div class="overlay" id="goalPickerOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
+  <div class="handle"></div><h3>Guardar em qual meta?</h3>
+  <p class="mini-note" style="margin-top:0" id="gpInfo"></p>
+  <div id="gpList"></div>
+  <button class="ghost" onclick="closeSheets()">Cancelar</button>
+</div></div>
+
 <div class="toast" id="toast"></div>
 <script>
 const CATS_EXP=['Alimentação','Moradia','Transporte','Carro','Moto','Pensão','Seguros','Saúde','Educação','Lazer','Compras','Contas','Outros'];
@@ -456,7 +471,7 @@ function openEditTransaction(id){let tx=data.transactions.find(x=>x.id===id);if(
 let editingFixedId=null,editingCardItemId=null,ciKind='expense',txIgnored=false,ciIgnored=false,categoryManuallySet=false,ceColorVal='',ciInstMode='total';
 function openFixed(id){editingFixedId=id||null;let f=id?data.fixed.find(x=>x.id===id):null;cats('expense',document.getElementById('fCategory'));document.getElementById('fTitle').textContent=f?'Editar conta fixa':'Nova conta fixa';document.getElementById('fValue').value=f?Number(f.value||0).toFixed(2).replace('.',','):'';document.getElementById('fDesc').value=f?f.desc:'';document.getElementById('fDay').value=f?f.day:'';if(f){let sel=document.getElementById('fCategory');sel.value=f.category;sel.dataset.prev=sel.value}document.getElementById('fixedOverlay').classList.add('show')}
 function closeSheets(){document.querySelectorAll('.overlay').forEach(x=>x.classList.remove('show'))}
-function saveTransaction(){let value=parseMoney(document.getElementById('value').value),desc=document.getElementById('desc').value.trim();if(!value||!desc)return showToast('Preencha valor e descrição');let date=document.getElementById('date').value||iso(new Date()),category=document.getElementById('category').value,account=document.getElementById('account').value,tags=[...new Set(document.getElementById('txTags').value.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean))];if(editingTransactionId!==null){let tx=data.transactions.find(x=>x.id===editingTransactionId);if(!tx)return showToast('Lançamento não encontrado');tx.type=currentType;tx.value=value;tx.desc=desc;tx.category=category;tx.date=date;tx.account=account;tx.tags=tags;tx.ignored=txIgnored;dashboardMonth=monthKey(date);localStorage.setItem('md_dashboard_month',dashboardMonth);editingTransactionId=null;save();closeSheets();showToast('Lançamento atualizado');return}dashboardMonth=monthKey(date);localStorage.setItem('md_dashboard_month',dashboardMonth);if(recurring&&currentType==='expense'){let day=Number(date.slice(8,10));data.fixed.push({id:Date.now(),value,desc,category,day,active:true});save();closeSheets();showToast('Conta fixa mensal criada');return}data.transactions.push({id:Date.now(),type:currentType,value,desc,category,date,account,tags,ignored:txIgnored});save();closeSheets();showToast((currentType==='expense'&&limitWarning(category,monthKey(date)))||'Lançamento salvo')}
+function saveTransaction(){let value=parseMoney(document.getElementById('value').value),desc=document.getElementById('desc').value.trim();if(!value||!desc)return showToast('Preencha valor e descrição');let date=document.getElementById('date').value||iso(new Date()),category=document.getElementById('category').value,account=document.getElementById('account').value,tags=[...new Set(document.getElementById('txTags').value.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean))];if(editingTransactionId!==null){let tx=data.transactions.find(x=>x.id===editingTransactionId);if(!tx)return showToast('Lançamento não encontrado');tx.type=currentType;tx.value=value;tx.desc=desc;tx.category=category;tx.date=date;tx.account=account;tx.tags=tags;tx.ignored=txIgnored;dashboardMonth=monthKey(date);localStorage.setItem('md_dashboard_month',dashboardMonth);editingTransactionId=null;save();closeSheets();showToast('Lançamento atualizado');return}dashboardMonth=monthKey(date);localStorage.setItem('md_dashboard_month',dashboardMonth);if(recurring&&currentType==='expense'){let day=Number(date.slice(8,10));data.fixed.push({id:Date.now(),value,desc,category,day,active:true});save();closeSheets();showToast('Conta fixa mensal criada');return}data.transactions.push({id:Date.now(),type:currentType,value,desc,category,date,account,tags,ignored:txIgnored});save();closeSheets();showToast((currentType==='expense'&&limitWarning(category,monthKey(date)))||'Lançamento salvo');if(currentType==='income')showPayPriority(value,monthKey(date))}
 function deleteTransaction(id){let tx=data.transactions.find(x=>x.id===id);if(!tx)return showToast('Lançamento não encontrado');if(confirm(`Excluir o lançamento "${tx.desc}" de ${brl(tx.value)}?`)){data.transactions=data.transactions.filter(x=>x.id!==id);if(editingTransactionId===id)editingTransactionId=null;save();closeSheets();showToast('Lançamento excluído')}}
 function deleteEditingTransaction(){if(editingTransactionId===null)return;deleteTransaction(editingTransactionId)}
 function saveFixed(){let value=parseMoney(document.getElementById('fValue').value),desc=document.getElementById('fDesc').value.trim(),day=Math.min(31,Math.max(1,Number(document.getElementById('fDay').value)));if(!value||!desc||!day)return showToast('Preencha os dados da conta');let category=document.getElementById('fCategory').value;if(editingFixedId){let f=data.fixed.find(x=>x.id===editingFixedId);if(f){f.value=value;f.desc=desc;f.category=category;f.day=day}editingFixedId=null;save();closeSheets();showToast('Conta fixa atualizada');return}data.fixed.push({id:Date.now(),value,desc,category,day,active:true});save();closeSheets();showToast('Conta fixa adicionada')}
@@ -639,6 +654,7 @@ function buildHomeMonths(){let el=document.getElementById('homeMonthStrip');if(!
 function render(){
   let mk=dashboardMonth, tx=data.transactions.filter(x=>monthKey(x.date)===mk&&!x.ignored), incReal=tx.filter(x=>x.type==='income').reduce((a,b)=>a+Number(b.value||0),0), incPending=receivablesProjected(mk), inc=incReal+incPending, variable=tx.filter(x=>x.type==='expense').reduce((a,b)=>a+Number(b.value||0),0), fix=data.fixed.filter(x=>x.active!==false).reduce((a,b)=>a+Number(b.value||0),0), cardsTotal=currentCardsTotal(mk), out=variable+fix+cardsTotal, saldo=inc-out;
   document.getElementById('summaryMonthLabel').textContent=`Saldo previsto · ${monthLabel(mk)}`;document.getElementById('balance').textContent=brl(saldo);document.getElementById('income').textContent=brl(inc);document.getElementById('incomeLabel').textContent=incPending>0.004?'Entradas previstas':'Entradas';document.getElementById('expense').textContent=brl(out);document.getElementById('summaryBreakdown').textContent=`Gastos ${brl(variable)}  •  Fixas ${brl(fix)}  •  Cartões ${brl(cardsTotal)}`+(incPending>0.004?`  •  A receber ${brl(incPending)}`:'');
+  let realSaldo=incReal-out,sbBtn=document.getElementById('saveBalanceBtn');if(sbBtn){sbBtn.style.display=realSaldo>0.004?'block':'none';sbBtn.dataset.saldo=realSaldo}
   document.getElementById('homeCardTotal').textContent=`${brl(cardsTotal)} em faturas de ${monthLabel(mk)}`;document.getElementById('homeCardHint').textContent=data.cards.length?`${data.cards.length} cartão(ões) cadastrado(s).`:'Cadastre seus cartões e acompanhe cada fatura.';
   document.getElementById('fixedTotal').textContent=`${brl(fix)} em contas fixas`;document.getElementById('fixedHint').textContent=fix?`${data.fixed.length} compromisso(s) recorrente(s) por mês.`:'Cadastre suas despesas mensais recorrentes.';
   let p=inc?Math.min(100,Math.round(out/inc*100)):0;document.getElementById('ring').style.setProperty('--p',p+'%');document.getElementById('ringText').textContent=p+'%';
@@ -832,7 +848,7 @@ function openReceivableEdit(id){editingReceivableId=id||null;let r=id?data.recei
 function saveReceivableEdit(){let desc=document.getElementById('rDesc').value.trim(),target=parseMoney(document.getElementById('rTarget').value),category=document.getElementById('rCategory').value||'Salário';if(!desc||!target)return showToast('Informe nome e valor esperado');if(editingReceivableId){let r=data.receivables.find(x=>x.id===editingReceivableId);if(r){r.desc=desc;r.target=target;r.category=category}}else data.receivables.push({id:Date.now(),desc,target,category,month:dashboardMonth});editingReceivableId=null;save();backToReceivables();showToast('Meta salva')}
 function deleteReceivable(id){let r=data.receivables.find(x=>x.id===id);if(!r)return;let recv=receivableReceived(id),msg=recv>0?`Excluir "${r.desc}"? Os ${brl(recv)} já registrados continuam nas suas entradas, só deixam de contar pra essa meta.`:`Excluir a meta "${r.desc}"?`;if(!confirm(msg))return;data.transactions.forEach(x=>{if(x.receivableId===id)delete x.receivableId});data.receivables=data.receivables.filter(x=>x.id!==id);save();renderReceivables();showToast('Meta excluída')}
 function openReceivablePay(id){payingReceivableId=id;let r=data.receivables.find(x=>x.id===id);if(!r)return;let recv=receivableReceived(id),curMonth=iso(new Date()).slice(0,7);document.getElementById('rpInfo').textContent=`${r.desc} · recebido ${brl(recv)} de ${brl(r.target)}`;document.getElementById('rpValue').value='';document.getElementById('rpDesc').value='';document.getElementById('rpDate').value=r.month===curMonth?iso(new Date()):r.month+'-01';document.getElementById('receivablePayOverlay').classList.add('show')}
-function saveReceivablePay(){if(!payingReceivableId)return;let r=data.receivables.find(x=>x.id===payingReceivableId);if(!r)return closeSheets();let value=parseMoney(document.getElementById('rpValue').value);if(!value)return showToast('Informe o valor recebido');let desc=document.getElementById('rpDesc').value.trim()||r.desc,date=document.getElementById('rpDate').value||iso(new Date());data.transactions.push({id:Date.now(),type:'income',value,desc,category:r.category,date,account:'',receivableId:r.id});let rid=payingReceivableId;payingReceivableId=null;save();let recv=receivableReceived(rid);backToReceivables();showToast(recv>=r.target?'🎉 Meta de recebimento completa!':`Registrado! Faltam ${brl(r.target-recv)}`)}
+function saveReceivablePay(){if(!payingReceivableId)return;let r=data.receivables.find(x=>x.id===payingReceivableId);if(!r)return closeSheets();let value=parseMoney(document.getElementById('rpValue').value);if(!value)return showToast('Informe o valor recebido');let desc=document.getElementById('rpDesc').value.trim()||r.desc,date=document.getElementById('rpDate').value||iso(new Date());data.transactions.push({id:Date.now(),type:'income',value,desc,category:r.category,date,account:'',receivableId:r.id});let rid=payingReceivableId;payingReceivableId=null;save();let recv=receivableReceived(rid);backToReceivables();showToast(recv>=r.target?'🎉 Meta de recebimento completa!':`Registrado! Faltam ${brl(r.target-recv)}`);showPayPriority(value,monthKey(date))}
 
 // ===== Fluxo de caixa dia a dia (v0.26) =====
 function dailyCashflow(mk){
@@ -1088,6 +1104,50 @@ function duplicateCardItem(id){
   data.cardItems.push(copy);
   save();renderCards();
   showToast(`"${it.desc}" duplicado nesta fatura`)
+}
+
+// ===== O que pagar primeiro (v0.44) =====
+let ppIncomeValue=0,ppMonth='';
+function payPriorityList(mk){
+  let out=[];
+  data.fixed.filter(x=>x.active!==false).forEach(x=>{if(!isPaid('fixed',x.id,mk))out.push({kind:'fixed',id:x.id,label:x.desc,value:Number(x.value||0),day:Number(x.day)||1})});
+  data.cards.forEach(c=>{let total=invoiceTotalFor(c.id,mk);if(total>0.004&&!isPaid('card',c.id,mk))out.push({kind:'card',id:c.id,label:'Fatura '+c.name,value:total,day:Number(c.dueDay)||1})});
+  return out.sort((a,b)=>a.day-b.day||b.value-a.value)
+}
+function ppRowHtml(it,covered){
+  return `<div style="display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)"><div style="font-size:19px">${covered?'✅':'⏳'}</div><div style="flex:1"><div style="font-weight:700">${esc(it.label)}</div><div class="cat-sub">Vence dia ${it.day}</div></div><b>${brl(it.value)}</b><button class="idel" style="margin-left:4px" title="Marcar como pago" onclick="payPriorityMark('${it.kind}',${it.id})">✓</button></div>`
+}
+function renderPayPriority(){
+  let list=payPriorityList(ppMonth),acc=0,rows=list.map(it=>{acc+=it.value;return ppRowHtml(it,acc<=ppIncomeValue+0.004)}).join('');
+  let leftover=ppIncomeValue-acc;
+  document.getElementById('ppInfo').innerHTML = !list.length
+    ? `Você recebeu ${brl(ppIncomeValue)}. Nenhuma conta pendente em ${monthLabel(ppMonth)} no momento.`
+    : (leftover>=-0.004
+      ? `Você recebeu ${brl(ppIncomeValue)}. Dá pra cobrir tudo que está pendente em ${monthLabel(ppMonth)}, e ainda sobra ${brl(leftover)}.`
+      : `Você recebeu ${brl(ppIncomeValue)}. Pela ordem de vencimento, essa é a prioridade — falta ${brl(-leftover)} pra cobrir tudo.`);
+  document.getElementById('ppList').innerHTML = rows || '<div class="empty">Nenhuma conta fixa ou fatura pendente.</div>'
+}
+function showPayPriority(value,mk){
+  if(payPriorityList(mk).length===0)return;
+  ppIncomeValue=value;ppMonth=mk;
+  renderPayPriority();
+  document.getElementById('payPriorityOverlay').classList.add('show')
+}
+function payPriorityMark(kind,id){togglePaid(kind,id,ppMonth);renderPayPriority()}
+
+// ===== Guardar sobra numa meta (v0.45) =====
+function openSaveBalance(){
+  let saldo=Number(document.getElementById('saveBalanceBtn').dataset.saldo||0);
+  if(saldo<=0.004)return showToast('Não tem saldo sobrando este mês ainda.');
+  if(!data.goals.length){showToast('Crie uma meta primeiro (ex.: Reserva de emergência).');openGoal(null);return}
+  if(data.goals.length===1){
+    openGoalMove(data.goals[0].id,1);
+    document.getElementById('gmValue').value=saldo.toFixed(2).replace('.',',');
+    return
+  }
+  document.getElementById('gpInfo').textContent=`Saldo disponível: ${brl(saldo)}. Escolha a meta:`;
+  document.getElementById('gpList').innerHTML=data.goals.map(g=>`<button class="save" style="margin-top:8px" onclick="closeSheets();openGoalMove(${g.id},1);document.getElementById('gmValue').value='${saldo.toFixed(2).replace('.',',')}'">${esc(g.name)}</button>`).join('');
+  document.getElementById('goalPickerOverlay').classList.add('show')
 }
 function openVoice(){voiceDraft=null;document.getElementById('voiceSave').style.display='none';document.getElementById('transcript').textContent='Ex.: “Gastei 87 reais no supermercado” ou “quanto gastei este mês?”';document.getElementById('voiceStatus').textContent='Toque e fale um lançamento ou uma pergunta.';document.getElementById('voiceOverlay').classList.add('show')}
 function applyVoiceText(t){let btn=document.getElementById('micBtn');btn.classList.remove('listening');document.getElementById('transcript').textContent=t;if(isFinancialQuestion(t)){let answer=financialAnswer(t);voiceDraft=null;document.getElementById('voiceSave').style.display='none';if(answer){document.getElementById('voiceStatus').textContent=answer;document.getElementById('transcript').textContent=`Você: ${t}\n\nMeu Dinheiro: ${answer}`;speakText(answer)}else document.getElementById('voiceStatus').textContent='Ainda não consegui responder essa pergunta.';return}voiceDraft=parseVoice(t);document.getElementById('voiceStatus').textContent=voiceDraft?`Entendi: ${voiceDraft.type==='income'?'entrada':'saída'} de ${brl(voiceDraft.value)}.`:'Não consegui entender. Tente fazer um lançamento ou uma pergunta sobre seus gastos.';document.getElementById('voiceSave').style.display=voiceDraft?'block':'none'}
