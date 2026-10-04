@@ -65,6 +65,7 @@
     .color-row{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px}.color-row button{width:32px;height:32px;border-radius:50%;border:2px solid transparent}.color-row button.sel{border-color:#fff}
     .lockscreen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px}.lock-inner{width:100%;max-width:320px;text-align:center}.lock-emoji{font-size:44px;margin-bottom:6px}#lockInput{width:100%;text-align:center;letter-spacing:10px;font-size:24px;padding:14px;border-radius:14px;border:1px solid #2a3340;background:#11161e;color:#fff;margin:16px 0 6px;outline:none}
     .bulk-row{display:flex;align-items:center;gap:10px;padding:9px 2px}.bulk-row label{flex:1;font-size:13px;display:flex;align-items:center}.bulk-row input{width:100px;padding:9px 10px;border-radius:12px;border:1px solid #2a3340;background:#11161e;color:#fff;text-align:right}
+    .ch-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px}.ch-box{aspect-ratio:1;border-radius:10px;border:1.5px solid var(--line);background:var(--card2);display:flex;align-items:center;justify-content:center;font-weight:750;font-size:12px;color:var(--muted);transition:transform .1s}.ch-box:active{transform:scale(.92)}.ch-box.checked{background:var(--brandg);border-color:transparent;color:#031013}
     .heat-head{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;text-align:center;font-size:11px;color:var(--muted)}
     .heat-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
     .heat-cell{aspect-ratio:1;border-radius:10px;background:#1b2029;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}
@@ -120,6 +121,7 @@
     <div class="card" id="homeCats"></div>
     <button class="recv-banner" style="margin-top:10px" onclick="openHeatmapDirect()"><span class="rb-ic">🔥</span><span class="rb-txt"><span class="rb-title">Mapa de calor</span><div class="rb-sub">Veja seus gastos dia a dia</div></span><span class="rb-chev">›</span></button>
     <button class="recv-banner" style="margin-top:10px" onclick="openWeekSummaryDirect()"><span class="rb-ic">📅</span><span class="rb-txt"><span class="rb-title">Resumo da semana</span><div class="rb-sub" id="weekHomeSub">Pix, débito e crédito somados</div></span><span class="rb-chev">›</span></button>
+    <button class="recv-banner" style="margin-top:10px" onclick="go('challenges')"><span class="rb-ic">🏆</span><span class="rb-txt"><span class="rb-title">Desafio de poupança</span><div class="rb-sub" id="challengeHomeSub">Crie um desafio divertido pra guardar dinheiro</div></span><span class="rb-chev">›</span></button>
     <div class="section" id="recvHomeSection" style="display:none"><h2>A receber</h2><button onclick="openReceivables()">Gerenciar</button></div>
     <div class="card" id="recvHomeCard" style="display:none"></div>
     <div class="section"><h2>Cartões</h2><button onclick="go('cards')">Ver faturas</button></div>
@@ -183,6 +185,11 @@
   </section>
 
 
+  <section id="challenges" class="page">
+    <div class="section" style="margin-top:8px"><h2 id="chTitle">Desafios de poupança</h2><button id="chNewBtn" onclick="openNewChallenge()">+ Novo</button></div>
+    <div id="challengesBody"></div>
+  </section>
+
   <section id="cards" class="page">
     <div class="section" style="margin-top:8px"><h2>Cartões de crédito</h2><button onclick="openCard()">+ Cartão</button></div>
     <div id="cardsEmpty" class="card empty">Nenhum cartão cadastrado.<br>Toque em <b>+ Cartão</b> para começar.</div>
@@ -220,7 +227,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.45 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.46 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -448,12 +455,21 @@
   <button class="ghost" onclick="closeSheets()">Cancelar</button>
 </div></div>
 
+<div class="overlay" id="challengeNewOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
+  <div class="handle"></div><h3>Novo desafio</h3>
+  <div class="field"><label>Nome</label><input id="chName" placeholder="Ex.: Desafio R$ 50.000" /></div>
+  <div class="field"><label>Valor da meta</label><div class="money-input"><span>R$</span><input id="chTarget" inputmode="decimal" placeholder="0,00" /></div></div>
+  <p class="mini-note">O app monta os quadradinhos sozinho: numerados de 1 até o valor dar certinho, com um último quadradinho ajustando o resto. Marca em qualquer ordem.</p>
+  <button class="save" onclick="saveNewChallenge()">Criar desafio</button>
+  <button class="ghost" onclick="closeSheets()">Cancelar</button>
+</div></div>
+
 <div class="toast" id="toast"></div>
 <script>
 const CATS_EXP=['Alimentação','Moradia','Transporte','Carro','Moto','Pensão','Seguros','Saúde','Educação','Lazer','Compras','Contas','Outros'];
 const CATS_INC=['Salário','Freelance','Reembolso','Venda','Rendimento','Outros'];
 let data=JSON.parse(localStorage.getItem('md_data')||'{"transactions":[],"fixed":[],"cards":[],"cardInvoices":[],"cardItems":[],"payments":[],"limits":{},"goals":[]}');
-if(!Array.isArray(data.transactions))data.transactions=[];if(!Array.isArray(data.fixed))data.fixed=[];if(!Array.isArray(data.cards))data.cards=[];if(!Array.isArray(data.cardInvoices))data.cardInvoices=[];if(!Array.isArray(data.cardItems))data.cardItems=[];if(!Array.isArray(data.payments))data.payments=[];if(!data.limits||typeof data.limits!=='object'||Array.isArray(data.limits))data.limits={};if(!Array.isArray(data.goals))data.goals=[];if(!Array.isArray(data.receivables))data.receivables=[];if(!data.catColors||typeof data.catColors!=='object'||Array.isArray(data.catColors))data.catColors={};ensureCatsOn(data);
+if(!Array.isArray(data.transactions))data.transactions=[];if(!Array.isArray(data.fixed))data.fixed=[];if(!Array.isArray(data.cards))data.cards=[];if(!Array.isArray(data.cardInvoices))data.cardInvoices=[];if(!Array.isArray(data.cardItems))data.cardItems=[];if(!Array.isArray(data.payments))data.payments=[];if(!data.limits||typeof data.limits!=='object'||Array.isArray(data.limits))data.limits={};if(!Array.isArray(data.goals))data.goals=[];if(!Array.isArray(data.receivables))data.receivables=[];if(!data.catColors||typeof data.catColors!=='object'||Array.isArray(data.catColors))data.catColors={};if(!Array.isArray(data.challenges))data.challenges=[];ensureCatsOn(data);
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
 let privacyMode=localStorage.getItem('md_privacy')==='1';
 const brl=v=>privacyMode?'R$ ••••••':Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -689,7 +705,7 @@ function limitWarning(cat,mk){let lim=Number(data.limits[cat]||0);if(!lim)return
 function shortMonth(k){let [y,m]=k.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}
 function fillMonthStrip(id){let el=document.getElementById(id);if(!el)return;let now=new Date(),months=[];for(let i=-6;i<=6;i++){let d=new Date(now.getFullYear(),now.getMonth()+i,1);months.push(iso(d).slice(0,7))}if(!months.includes(dashboardMonth))months.push(dashboardMonth);months=[...new Set(months)].sort();el.innerHTML=months.map(k=>{let [y,m]=k.split('-').map(Number),label=new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','');return `<button class="pill${k===dashboardMonth?' active':''}" onclick="setDashboardMonth('${k}')">${label}</button>`}).join('');setTimeout(()=>el.querySelector('.active')?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}),0)}
 function catRowHtml(c,spent,out,limit){let lim=Number(limit||0),pct=lim?spent/lim:0,cls='',w=0,sub,subcls='';if(lim){cls=pct>=1?'over':pct>=.8?'warn':'ok';subcls=cls==='ok'?'':cls;w=Math.min(100,pct*100);sub=pct>=1?`Estourou ${brl(spent-lim)} · ${Math.round(pct*100)}% de ${brl(lim)}`:`${Math.round(pct*100)}% de ${brl(lim)} · faltam ${brl(lim-spent)}`}else{let share=out?spent/out*100:0;w=Math.min(100,share);sub=`${Math.round(share)}% das saídas · toque para ver e editar os itens`}let cc=data.catColors[c],dot=cc?`<span class="catdot" style="background:${cc}"></span>`:'',barStyle=(!lim&&cc)?`background:${cc}`:'';return `<div class="cat-row" data-cat="${esc(c)}" onclick="openCatDetail(this.dataset.cat)"><div class="icon">${icon(c)}</div><div><div class="cat-top"><b>${dot}${esc(c)}</b><span>${brl(spent)}</span></div><div class="bar"><i class="${cls}" style="width:${w}%;${barStyle}"></i></div><div class="cat-sub ${subcls}">${sub}</div></div></div>`}
-function renderPlan(){renderCashflow();renderHeatmap();renderMonthSummary();renderWeekSummary();
+function renderPlan(){renderCashflow();renderHeatmap();renderMonthSummary();renderWeekSummary();renderChallenges();
   let el=document.getElementById('catList');if(!el)return;
   let mk=dashboardMonth,t=monthTotals(mk),ct=monthCatTotals(mk);
   fillMonthStrip('planMonthStrip');
@@ -1149,6 +1165,54 @@ function openSaveBalance(){
   document.getElementById('gpList').innerHTML=data.goals.map(g=>`<button class="save" style="margin-top:8px" onclick="closeSheets();openGoalMove(${g.id},1);document.getElementById('gmValue').value='${saldo.toFixed(2).replace('.',',')}'">${esc(g.name)}</button>`).join('');
   document.getElementById('goalPickerOverlay').classList.add('show')
 }
+
+// ===== Desafio de poupança (v0.46) =====
+function genChallengeBoxes(target){
+  target=Math.round(Number(target)||0);
+  if(target<=0)return[];
+  let n=Math.floor((-1+Math.sqrt(1+8*target))/2);
+  let sum=n*(n+1)/2,boxes=[];
+  for(let i=1;i<=n;i++)boxes.push({n:i,checked:false});
+  let rem=target-sum;
+  if(rem>0)boxes.push({n:rem,checked:false});
+  return boxes
+}
+let currentChallengeId=null;
+function openNewChallenge(){document.getElementById('chName').value='';document.getElementById('chTarget').value='';document.getElementById('challengeNewOverlay').classList.add('show');setTimeout(()=>document.getElementById('chName').focus(),60)}
+function saveNewChallenge(){
+  let name=document.getElementById('chName').value.trim()||'Desafio',target=parseMoney(document.getElementById('chTarget').value);
+  if(!target||target<=0)return showToast('Informe o valor da meta');
+  let boxes=genChallengeBoxes(target),id=Date.now();
+  data.challenges.push({id,name,target,boxes});
+  save();closeSheets();currentChallengeId=id;renderChallenges();showToast(`Desafio criado! ${boxes.length} quadradinhos.`)
+}
+function openChallenge(id){currentChallengeId=id;renderChallenges()}
+function backToChallengeList(){currentChallengeId=null;renderChallenges()}
+function toggleChallengeBox(idx){let c=data.challenges.find(x=>x.id===currentChallengeId);if(!c)return;c.boxes[idx].checked=!c.boxes[idx].checked;save();renderChallenges()}
+function deleteChallenge(id){let c=data.challenges.find(x=>x.id===id);if(!c)return;if(!confirm(`Excluir o desafio "${c.name}"? Isso apaga todo o progresso marcado.`))return;data.challenges=data.challenges.filter(x=>x.id!==id);if(currentChallengeId===id)currentChallengeId=null;save();renderChallenges();showToast('Desafio excluído')}
+function renderChallenges(){
+  let body=document.getElementById('challengesBody');if(!body)return;
+  let title=document.getElementById('chTitle'),newBtn=document.getElementById('chNewBtn');
+  let sub=document.getElementById('challengeHomeSub');
+  if(sub){
+    if(data.challenges.length===1){let c=data.challenges[0],saved=c.boxes.filter(b=>b.checked).reduce((a,b)=>a+b.n,0),pct=c.target?Math.round(saved/c.target*100):0;sub.textContent=`${c.name} · ${pct}%`}
+    else if(data.challenges.length>1){sub.textContent=`${data.challenges.length} desafios ativos`}
+    else sub.textContent='Crie um desafio divertido pra guardar dinheiro'
+  }
+  if(currentChallengeId===null){
+    title.textContent='Desafios de poupança';newBtn.style.display='block';
+    if(!data.challenges.length){body.innerHTML='<div class="empty">Nenhum desafio ainda.<br>Toque em "+ Novo" pra criar (ex.: Desafio R$ 50.000).</div>';return}
+    body.innerHTML=data.challenges.map(c=>{let saved=c.boxes.filter(b=>b.checked).reduce((a,b)=>a+b.n,0),pct=c.target?Math.round(saved/c.target*100):0,doneCount=c.boxes.filter(b=>b.checked).length;return `<div class="goal" style="cursor:pointer" onclick="openChallenge(${c.id})"><div class="goal-top"><b>🏆 ${esc(c.name)}</b><span>${pct}%</span></div><div class="bar"><i class="${pct>=100?'ok':''}" style="width:${Math.min(100,pct)}%"></i></div><div class="cat-sub">${brl(saved)} de ${brl(c.target)} · ${doneCount} de ${c.boxes.length} quadradinhos</div></div>`}).join('')
+  }else{
+    let c=data.challenges.find(x=>x.id===currentChallengeId);
+    if(!c){currentChallengeId=null;renderChallenges();return}
+    title.textContent=c.name;newBtn.style.display='none';
+    let saved=c.boxes.filter(b=>b.checked).reduce((a,b)=>a+b.n,0),falta=Math.max(0,c.target-saved),pct=c.target?Math.round(saved/c.target*100):0,doneCount=c.boxes.filter(b=>b.checked).length;
+    let stats=`<div class="card" style="padding:16px;text-align:center"><div class="mini-note">Progresso</div><div style="font-size:26px;font-weight:800;margin:4px 0">${pct}%</div><div style="display:flex;justify-content:space-around;margin-top:10px"><div><div class="mini-note">Já guardei</div><b style="color:var(--green)">${brl(saved)}</b></div><div><div class="mini-note">Falta</div><b style="color:var(--red)">${brl(falta)}</b></div></div><div class="bar" style="margin-top:12px"><i class="${pct>=100?'ok':''}" style="width:${Math.min(100,pct)}%"></i></div></div>`;
+    let grid=`<div class="ch-grid">${c.boxes.map((b,i)=>`<div class="ch-box${b.checked?' checked':''}" onclick="toggleChallengeBox(${i})">${b.n}</div>`).join('')}</div>`;
+    body.innerHTML=`<button class="ghost" style="margin-bottom:10px" onclick="backToChallengeList()">← Voltar</button>${stats}<p class="mini-note" style="text-align:center;margin:10px 0">${doneCount} de ${c.boxes.length} quadradinhos concluídos. Toque em qualquer número pra marcar — pode ser em qualquer ordem.</p>${grid}<button class="ghost" style="margin-top:14px;color:#ff858e" onclick="deleteChallenge(${c.id})">🗑 Excluir desafio</button>`
+  }
+}
 function openVoice(){voiceDraft=null;document.getElementById('voiceSave').style.display='none';document.getElementById('transcript').textContent='Ex.: “Gastei 87 reais no supermercado” ou “quanto gastei este mês?”';document.getElementById('voiceStatus').textContent='Toque e fale um lançamento ou uma pergunta.';document.getElementById('voiceOverlay').classList.add('show')}
 function applyVoiceText(t){let btn=document.getElementById('micBtn');btn.classList.remove('listening');document.getElementById('transcript').textContent=t;if(isFinancialQuestion(t)){let answer=financialAnswer(t);voiceDraft=null;document.getElementById('voiceSave').style.display='none';if(answer){document.getElementById('voiceStatus').textContent=answer;document.getElementById('transcript').textContent=`Você: ${t}\n\nMeu Dinheiro: ${answer}`;speakText(answer)}else document.getElementById('voiceStatus').textContent='Ainda não consegui responder essa pergunta.';return}voiceDraft=parseVoice(t);document.getElementById('voiceStatus').textContent=voiceDraft?`Entendi: ${voiceDraft.type==='income'?'entrada':'saída'} de ${brl(voiceDraft.value)}.`:'Não consegui entender. Tente fazer um lançamento ou uma pergunta sobre seus gastos.';document.getElementById('voiceSave').style.display=voiceDraft?'block':'none'}
 window.onNativeVoiceResult=t=>applyVoiceText(t);
@@ -1168,6 +1232,7 @@ function normalizeBackupData(x){
   if(!Array.isArray(source.goals))source.goals=[];
   if(!Array.isArray(source.receivables))source.receivables=[];
   if(!source.catColors||typeof source.catColors!=='object'||Array.isArray(source.catColors))source.catColors={};
+  if(!Array.isArray(source.challenges))source.challenges=[];
   ensureCatsOn(source);
   return source
 }
@@ -1223,8 +1288,8 @@ function importData(e){
 window.onNativeBackupExported=function(){showToast('Backup salvo no aparelho')}
 window.onNativeBackupError=function(message){showToast(message||'Não foi possível concluir o backup')}
 window.onNativeBackupImported=function(raw){applyImportedBackup(raw)}
-function seedDemo(){if(!confirm('ATENÇÃO: isso SUBSTITUI todos os seus dados atuais por dados de exemplo. Se ainda não fez backup, cancele e exporte antes. Continuar?'))return;let y=iso(new Date()).slice(0,8);data={transactions:[{id:1,type:'income',value:6500,desc:'Salário',category:'Salário',date:y+'05',account:'Conta bancária'},{id:2,type:'expense',value:185.42,desc:'Supermercado',category:'Alimentação',date:y+'12',account:'Pix'},{id:3,type:'expense',value:220,desc:'Combustível',category:'Carro',date:y+'17',account:'Crédito'}],fixed:[{id:11,value:1450,desc:'Financiamento do carro',category:'Carro',day:10,active:true},{id:12,value:800,desc:'Pensão alimentícia',category:'Pensão',day:5,active:true},{id:13,value:165,desc:'Seguro do carro',category:'Seguros',day:18,active:true},{id:14,value:95,desc:'Seguro da moto',category:'Seguros',day:18,active:true}],cards:[{id:21,name:'Cartão principal',dueDay:10,limit:5000}],cardInvoices:[{id:22,cardId:21,month:y.slice(0,7),baseValue:640}],cardItems:[{id:23,cardId:21,month:y.slice(0,7),value:220,desc:'Combustível',category:'Carro',date:y+'17'}],payments:[],limits:{'Alimentação':800,'Carro':600},goals:[{id:31,name:'Reserva de emergência',target:10000,saved:2500,deadline:''}],receivables:[{id:41,desc:'Salário do mês',category:'Salário',target:3500,month:y.slice(0,7)}],catColors:{}};ensureCatsOn(data);currentCardId=21;save();go('home');showToast('Exemplo carregado')}
-function clearData(){if(confirm('Tem certeza? Isso apaga TODOS os dados deste aparelho (lançamentos, contas fixas, cartões e faturas). Só dá para recuperar com um backup.')){data={transactions:[],fixed:[],cards:[],cardInvoices:[],cardItems:[],payments:[],limits:{},goals:[],receivables:[],catColors:{}};ensureCatsOn(data);currentCardId=null;save();showToast('Dados apagados')}}
+function seedDemo(){if(!confirm('ATENÇÃO: isso SUBSTITUI todos os seus dados atuais por dados de exemplo. Se ainda não fez backup, cancele e exporte antes. Continuar?'))return;let y=iso(new Date()).slice(0,8);data={transactions:[{id:1,type:'income',value:6500,desc:'Salário',category:'Salário',date:y+'05',account:'Conta bancária'},{id:2,type:'expense',value:185.42,desc:'Supermercado',category:'Alimentação',date:y+'12',account:'Pix'},{id:3,type:'expense',value:220,desc:'Combustível',category:'Carro',date:y+'17',account:'Crédito'}],fixed:[{id:11,value:1450,desc:'Financiamento do carro',category:'Carro',day:10,active:true},{id:12,value:800,desc:'Pensão alimentícia',category:'Pensão',day:5,active:true},{id:13,value:165,desc:'Seguro do carro',category:'Seguros',day:18,active:true},{id:14,value:95,desc:'Seguro da moto',category:'Seguros',day:18,active:true}],cards:[{id:21,name:'Cartão principal',dueDay:10,limit:5000}],cardInvoices:[{id:22,cardId:21,month:y.slice(0,7),baseValue:640}],cardItems:[{id:23,cardId:21,month:y.slice(0,7),value:220,desc:'Combustível',category:'Carro',date:y+'17'}],payments:[],limits:{'Alimentação':800,'Carro':600},goals:[{id:31,name:'Reserva de emergência',target:10000,saved:2500,deadline:''}],receivables:[{id:41,desc:'Salário do mês',category:'Salário',target:3500,month:y.slice(0,7)}],catColors:{},challenges:[]};ensureCatsOn(data);currentCardId=21;save();go('home');showToast('Exemplo carregado')}
+function clearData(){if(confirm('Tem certeza? Isso apaga TODOS os dados deste aparelho (lançamentos, contas fixas, cartões e faturas). Só dá para recuperar com um backup.')){data={transactions:[],fixed:[],cards:[],cardInvoices:[],cardItems:[],payments:[],limits:{},goals:[],receivables:[],catColors:{},challenges:[]};ensureCatsOn(data);currentCardId=null;save();showToast('Dados apagados')}}
 document.getElementById('today').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});cats('expense',document.getElementById('category'));cats('expense',document.getElementById('fCategory'));cats('expense',document.getElementById('ciCategory'));currentCardId=data.cards[0]?.id||null;render();setTimeout(()=>{syncNativeReminders();try{if(window.AndroidVoice&&typeof window.AndroidVoice.requestNotificationPermission==='function')window.AndroidVoice.requestNotificationPermission()}catch(e){}},900);
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 document.getElementById('privacyBtn').textContent=privacyMode?'🙈':'👁️';
