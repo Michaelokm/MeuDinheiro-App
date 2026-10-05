@@ -66,6 +66,11 @@
     .lockscreen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px}.lock-inner{width:100%;max-width:320px;text-align:center}.lock-emoji{font-size:44px;margin-bottom:6px}#lockInput{width:100%;text-align:center;letter-spacing:10px;font-size:24px;padding:14px;border-radius:14px;border:1px solid #2a3340;background:#11161e;color:#fff;margin:16px 0 6px;outline:none}
     .bulk-row{display:flex;align-items:center;gap:10px;padding:9px 2px}.bulk-row label{flex:1;font-size:13px;display:flex;align-items:center}.bulk-row input{width:100px;padding:9px 10px;border-radius:12px;border:1px solid #2a3340;background:#11161e;color:#fff;text-align:right}
     .ch-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px}.ch-box{aspect-ratio:1;border-radius:10px;border:1.5px solid var(--line);background:var(--card2);display:flex;align-items:center;justify-content:center;font-weight:750;font-size:12px;color:var(--muted);transition:transform .1s}.ch-box:active{transform:scale(.92)}.ch-box.checked{background:var(--brandg);border-color:transparent;color:#031013}
+    .pp-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 8px}.pp-tile{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}.pp-tile small{display:block;font-size:11px;color:var(--muted);margin-bottom:3px}.pp-tile b{font-size:15px}.pp-tile.hl{background:var(--brandg);border-color:transparent}.pp-tile.hl small{color:#0b3a42}.pp-tile.hl b{color:#031013;font-size:17px}
+    .pp-bar{display:flex;height:9px;border-radius:99px;overflow:hidden;background:#252c38;margin:2px 0 6px}.pp-bar i{display:block;height:100%}
+    .pp-sec{font-weight:800;font-size:14px;margin:16px 0 4px;display:flex;justify-content:space-between;align-items:baseline}
+    .pp-paidrow{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)}
+    .pp-grp{display:flex;justify-content:space-between;padding:12px 2px;border-bottom:1px solid var(--line);font-weight:700;font-size:13px;cursor:pointer}
     .heat-head{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;text-align:center;font-size:11px;color:var(--muted)}
     .heat-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
     .heat-cell{aspect-ratio:1;border-radius:10px;background:#1b2029;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}
@@ -228,7 +233,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.47 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.48 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -445,9 +450,13 @@
 </div></div>
 
 <div class="overlay" id="payPriorityOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
-  <div class="handle"></div><h3>💡 O que pagar primeiro</h3>
-  <p class="mini-note" id="ppInfo" style="margin-top:0"></p>
+  <div class="handle"></div><h3>💡 O que pagar</h3>
+  <p class="mini-note" id="ppJust" style="margin-top:0;display:none"></p>
+  <div id="ppSummary"></div>
+  <div class="pp-sec"><span>⏳ Falta pagar</span><span id="ppPendTotal"></span></div>
+  <p class="mini-note" id="ppInfo" style="margin:2px 0 4px"></p>
   <div id="ppList"></div>
+  <div id="ppPaidBox"></div>
   <button class="ghost" onclick="closeSheets()">Fechar</button>
 </div></div>
 
@@ -472,7 +481,7 @@
 const CATS_EXP=['Alimentação','Moradia','Transporte','Carro','Moto','Pensão','Seguros','Saúde','Educação','Lazer','Compras','Contas','Outros'];
 const CATS_INC=['Salário','Freelance','Reembolso','Venda','Rendimento','Outros'];
 let data=JSON.parse(localStorage.getItem('md_data')||'{"transactions":[],"fixed":[],"cards":[],"cardInvoices":[],"cardItems":[],"payments":[],"limits":{},"goals":[]}');
-if(!Array.isArray(data.transactions))data.transactions=[];if(!Array.isArray(data.fixed))data.fixed=[];if(!Array.isArray(data.cards))data.cards=[];if(!Array.isArray(data.cardInvoices))data.cardInvoices=[];if(!Array.isArray(data.cardItems))data.cardItems=[];if(!Array.isArray(data.payments))data.payments=[];if(!data.limits||typeof data.limits!=='object'||Array.isArray(data.limits))data.limits={};if(!Array.isArray(data.goals))data.goals=[];if(!Array.isArray(data.receivables))data.receivables=[];if(!data.catColors||typeof data.catColors!=='object'||Array.isArray(data.catColors))data.catColors={};if(!Array.isArray(data.challenges))data.challenges=[];ensureCatsOn(data);
+if(!Array.isArray(data.transactions))data.transactions=[];if(!Array.isArray(data.fixed))data.fixed=[];if(!Array.isArray(data.cards))data.cards=[];if(!Array.isArray(data.cardInvoices))data.cardInvoices=[];if(!Array.isArray(data.cardItems))data.cardItems=[];if(!Array.isArray(data.payments))data.payments=[];if(!data.limits||typeof data.limits!=='object'||Array.isArray(data.limits))data.limits={};if(!Array.isArray(data.goals))data.goals=[];if(!Array.isArray(data.receivables))data.receivables=[];if(!data.catColors||typeof data.catColors!=='object'||Array.isArray(data.catColors))data.catColors={};if(!Array.isArray(data.challenges))data.challenges=[];purgeOrphanPayments(data);ensureCatsOn(data);
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
 let privacyMode=localStorage.getItem('md_privacy')==='1';
 const brl=v=>privacyMode?'R$ ••••••':Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -670,10 +679,11 @@ function saveCardItem(){let c=selectedCard();if(!c)return;let value=parseMoney(d
 function openEditCardItem(id){let it=data.cardItems.find(x=>x.id===id);if(!it)return;editingCardItemId=id;cats('expense',document.getElementById('ciCategory'));document.getElementById('ciTitle').textContent='Editar gasto da fatura';document.getElementById('ciValue').value=Number(it.value||0).toFixed(2).replace('.',',');document.getElementById('ciDesc').value=it.desc||'';let sel=document.getElementById('ciCategory');sel.value=it.category;sel.dataset.prev=sel.value;document.getElementById('ciDate').value=it.date||iso(new Date());setCiMore(true);setCiKind((it.refund||it.advance)?'refund':'expense');document.getElementById('ciInstBox').style.display='none';ciIgnored=!!it.ignored;document.getElementById('ciIgnoreSwitch').classList.toggle('on',ciIgnored);let note=document.getElementById('ciEditNote');if(it.group){note.textContent=`Compra parcelada (${it.inst||'?'}/${it.instTotal||'?'}). Valor e data mudam só esta parcela; a categoria muda em todas.`;note.style.display='block'}else note.style.display='none';document.getElementById('ciDeleteBtn').style.display='block';document.getElementById('cardItemOverlay').classList.add('show')}
 function deleteEditingCardItem(){if(editingCardItemId===null)return;let id=editingCardItemId;closeSheets();editingCardItemId=null;deleteCardItem(id)}
 function deleteCardItem(id){let it=data.cardItems.find(x=>x.id===id);if(!it)return;if(it.group){if(confirm('Essa compra é parcelada. Remover TODAS as parcelas? (Cancelar = escolher só esta)')){data.cardItems=data.cardItems.filter(x=>x.group!==it.group);save();showToast('Compra parcelada removida');return}if(confirm('Remover só esta parcela?')){data.cardItems=data.cardItems.filter(x=>x.id!==id);save()}return}if(confirm('Remover este gasto da fatura?')){data.cardItems=data.cardItems.filter(x=>x.id!==id);save()}}
-function deleteSelectedCard(){let c=selectedCard();if(!c)return;if(confirm(`Excluir o cartão ${c.name} e todas as faturas dele?`)){data.cards=data.cards.filter(x=>x.id!==c.id);data.cardInvoices=data.cardInvoices.filter(x=>x.cardId!==c.id);data.cardItems=data.cardItems.filter(x=>x.cardId!==c.id);currentCardId=data.cards[0]?.id||null;save();showToast('Cartão excluído')}}
+function deleteSelectedCard(){let c=selectedCard();if(!c)return;if(confirm(`Excluir o cartão ${c.name} e todas as faturas dele?`)){data.cards=data.cards.filter(x=>x.id!==c.id);data.cardInvoices=data.cardInvoices.filter(x=>x.cardId!==c.id);data.cardItems=data.cardItems.filter(x=>x.cardId!==c.id);purgeOrphanPayments(data);currentCardId=data.cards[0]?.id||null;save();showToast('Cartão excluído')}}
 function monthLabel(k){let [y,m]=k.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}
 function renderCards(){let empty=document.getElementById('cardsEmpty'),content=document.getElementById('cardsContent');if(!empty||!content)return;if(!data.cards.length){empty.style.display='block';content.style.display='none';return}empty.style.display='none';content.style.display='block';if(!currentCardId||!data.cards.some(c=>c.id===currentCardId))currentCardId=data.cards[0].id;let c=selectedCard();document.getElementById('cardTabs').innerHTML=data.cards.map(x=>`<button class="card-chip${x.id===c.id?' active':''}" onclick="setCard(${x.id})">💳 ${esc(x.name)}</button>`).join('');document.getElementById('selectedCardName').textContent=c.name;document.getElementById('selectedCardMeta').textContent=`Vence dia ${c.dueDay}`;let total=invoiceTotalFor(c.id,currentInvoiceMonth),paid=isPaid('card',c.id,currentInvoiceMonth);document.getElementById('invoiceMonthLabel').textContent=`Fatura de ${monthLabel(currentInvoiceMonth)}`;document.getElementById('invoiceTotal').textContent=brl(total);document.getElementById('invoiceLimitInfo').textContent='Edite o valor atual ou acrescente novas compras abaixo.';document.getElementById('invoiceStatus').textContent=paid?`✓ ${paidLabel('card',c.id,currentInvoiceMonth)}`:`Pendente · vence dia ${c.dueDay}`;document.getElementById('invoiceStatus').classList.toggle('paid-sub',paid);let payBtn=document.getElementById('invoicePaidBtn');payBtn.textContent=paid?'↩ Desmarcar como paga':'✓ Marcar fatura como paga';payBtn.classList.toggle('paid-btn',paid);buildInvoiceMonths();let rBtn=document.getElementById('reorganizeBtn');if(rBtn)rBtn.style.display=c.closingDay?'block':'none';let base=invoiceBase(c.id,currentInvoiceMonth),items=[...invoiceItems(c.id,currentInvoiceMonth)].sort(invoiceSortMode==='added'?(a,b)=>a.id-b.id:(a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id),rows='';if(base>0)rows+=`<div class="invoice-item"><div class="ii">🧾</div><div><div class="ititle">Valor já acumulado</div><div class="isub">Base informada para esta fatura</div></div><b>${brl(base)}</b><span></span></div>`;rows+=items.map(x=>`<div class="invoice-item${x.ignored?' ignored':''}" style="cursor:pointer" onclick="openEditCardItem(${x.id})"><div class="ii">${x.refund?'↩️':(x.advance?'💵':icon(x.category))}</div><div><div class="ititle">${esc(x.desc)}</div><div class="isub">${esc(x.category)}${x.refund?' · Estorno':(x.advance?' · Antecipação':'')}${x.ignored?' · 🚫 Ignorado':''} · ${new Date((x.date||iso(new Date()))+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</div></div><b class="${(x.refund||x.advance)?'refund':''}">${(x.refund||x.advance)?'+ ':''}${brl(x.value)}</b><button class="idup" title="Duplicar" onclick="event.stopPropagation();duplicateCardItem(${x.id})">📋</button><button class="idel" onclick="event.stopPropagation();deleteCardItem(${x.id})">×</button></div>`).join('');document.getElementById('invoiceList').innerHTML=rows||'<div class="empty">Nenhum valor nesta fatura ainda.<br>Defina o valor atual ou acrescente um gasto.</div>'}
-function deleteFixed(id){if(confirm('Remover esta conta fixa?')){data.fixed=data.fixed.filter(x=>x.id!==id);save()}}
+function purgeOrphanPayments(d){if(!Array.isArray(d.payments))return;d.payments=d.payments.filter(p=>p.kind==='fixed'?d.fixed.some(f=>f.id===p.itemId):(p.kind==='card'?d.cards.some(c=>c.id===p.itemId):true))}
+function deleteFixed(id){if(confirm('Remover esta conta fixa?')){data.fixed=data.fixed.filter(x=>x.id!==id);purgeOrphanPayments(data);save()}}
 function monthKey(d){return d.slice(0,7)}
 function icon(cat){let m={'Alimentação':'🛒','Moradia':'🏠','Transporte':'🚕','Carro':'🚗','Moto':'🏍️','Pensão':'👤','Seguros':'🛡️','Saúde':'❤️','Educação':'🎓','Lazer':'🎬','Compras':'🛍️','Contas':'🧾','Salário':'💼','Freelance':'💻','Reembolso':'↩️','Venda':'🏷️','Rendimento':'📈'};return (data.catIcons&&data.catIcons[cat])||m[cat]||'•'}
 function txHtml(x){let d=new Date(x.date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}),tags=x.tags&&x.tags.length?`<div class="tagrow">${x.tags.map(t=>`<span class="tagchip" onclick="event.stopPropagation();quickTagFilter('${esc(t)}')">#${esc(t)}</span>`).join('')}</div>`:'';return `<div class="tx${x.ignored?' ignored':''}" onclick="openEditTransaction(${x.id})" title="Toque para editar"><div class="icon">${icon(x.category)}</div><div><div class="name">${esc(x.desc)}</div><div class="meta">${esc(x.category)} · ${d}${x.account?' · '+esc(x.account):''}${x.receivableId?(' · 🎯 '+esc((data.receivables.find(r=>r.id===x.receivableId)||{}).desc||'Recebimento')):''}${(x.dueDate&&!x.paid)?` · ⏳ A pagar · vence ${fmtShort(x.dueDate)}`:''}${(x.dueDate&&x.paid)?' · ✅ Pago':''}${x.ignored?' · 🚫 Ignorado':''} · toque para editar</div>${tags}</div><div class="amount ${x.type}">${x.type==='expense'?'−':'+'} ${brl(x.value)}</div><button class="tdel" onclick="event.stopPropagation();deleteTransaction(${x.id})" aria-label="Excluir lançamento">🗑</button></div>`}
@@ -1136,17 +1146,26 @@ function duplicateCardItem(id){
   showToast(`"${it.desc}" duplicado nesta fatura`)
 }
 
-// ===== O que pagar primeiro (v0.44, refeito na v0.47) =====
-let ppIncomeValue=0,ppMonth='';
-function cashAvailable(mk){
-  let tx=data.transactions.filter(x=>monthKey(x.date||'')===mk&&!x.ignored),sum=(a,f)=>a.reduce((t,x)=>t+Number(f(x)||0),0);
-  let received=sum(tx.filter(x=>x.type==='income'),x=>x.value);
-  let paidVar=sum(tx.filter(x=>x.type==='expense'&&!(x.dueDate&&!x.paid)),x=>x.value);
-  let paidBills=sum(data.payments.filter(p=>p.month===mk&&(p.kind==='fixed'||p.kind==='card')),p=>p.amount);
-  let paidAdv=sum(data.cardItems.filter(x=>x.advance&&!x.ignored&&monthKey(x.date||'')===mk),x=>x.value);
-  let paid=paidVar+paidBills+paidAdv;
-  return{received,paid,available:received-paid}
+// ===== O que pagar (v0.44, refeito na v0.47 e v0.48) =====
+let ppIncomeValue=0,ppMonth='',ppOpen={daily:false,inc:false};
+function payFlows(mk){
+  let tx=data.transactions.filter(x=>monthKey(x.date||'')===mk&&!x.ignored),num=v=>Number(v||0),byDate=(a,b)=>(b.date||'').localeCompare(a.date||'');
+  let incomes=tx.filter(x=>x.type==='income').map(x=>({label:x.desc,date:x.date,value:num(x.value)})).sort(byDate);
+  let bills=[];
+  data.payments.filter(p=>p.month===mk).forEach(p=>{
+    if(p.kind==='fixed'){let f=data.fixed.find(x=>x.id===p.itemId);if(f)bills.push({icon:'🔁',label:f.desc,tag:'Conta fixa',date:p.paidAt||mk+'-01',value:num(p.amount),undo:`payPriorityUndo('fixed',${p.itemId})`})}
+    else if(p.kind==='card'){let c=data.cards.find(x=>x.id===p.itemId);if(c)bills.push({icon:'💳',label:'Fatura '+c.name,tag:'Fatura do cartão',date:p.paidAt||mk+'-01',value:num(p.amount),undo:`payPriorityUndo('card',${p.itemId})`})}
+  });
+  tx.filter(x=>x.type==='expense'&&x.dueDate&&x.paid).forEach(x=>bills.push({icon:'🧾',label:x.desc,tag:'Conta a pagar',date:x.paidAt||x.dueDate,value:num(x.value),undo:`payPriorityUndo('tx',${x.id})`}));
+  data.cardItems.filter(x=>x.advance&&!x.ignored&&monthKey(x.date||'')===mk).forEach(x=>{let c=data.cards.find(k=>k.id===x.cardId);bills.push({icon:'💵',label:x.desc+(c?' · '+c.name:''),tag:'Antecipação',date:x.date,value:num(x.value),undo:''})});
+  bills.sort(byDate);
+  let exp=tx.filter(x=>x.type==='expense'&&!x.dueDate);
+  let daily=exp.filter(x=>x.account!=='Crédito').map(x=>({label:x.desc,date:x.date,value:num(x.value),sub:[x.category,x.account].filter(Boolean).join(' · ')})).sort(byDate);
+  let credit=exp.filter(x=>x.account==='Crédito').reduce((a,x)=>a+num(x.value),0);
+  let sum=a=>a.reduce((t,x)=>t+x.value,0),received=sum(incomes),paidBills=sum(bills),paidDaily=sum(daily);
+  return{incomes,bills,daily,credit,received,paidBills,paidDaily,available:received-paidBills-paidDaily}
 }
+function cashAvailable(mk){let f=payFlows(mk);return{received:f.received,paidBills:f.paidBills,paidDaily:f.paidDaily,paid:f.paidBills+f.paidDaily,available:f.available}}
 function payPriorityList(mk){
   let out=[];
   data.fixed.filter(x=>x.active!==false).forEach(x=>{if(!isPaid('fixed',x.id,mk))out.push({kind:'fixed',id:x.id,label:x.desc,value:Number(x.value||0),due:dueDateForMonth(mk,x.day)})});
@@ -1154,19 +1173,27 @@ function payPriorityList(mk){
   data.transactions.filter(x=>x.type==='expense'&&x.dueDate&&!x.paid&&!x.ignored&&monthKey(x.dueDate)<=mk).forEach(x=>out.push({kind:'tx',id:x.id,label:x.desc,value:Number(x.value||0),due:x.dueDate}));
   return out.sort((a,b)=>a.due.localeCompare(b.due)||b.value-a.value)
 }
-function ppRowHtml(it,covered){
+function ppRowHtml(it,covered,acc){
   let late=it.due<iso(new Date());
-  return `<div style="display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)"><div style="font-size:19px">${covered?'✅':'⏳'}</div><div style="flex:1"><div style="font-weight:700">${esc(it.label)}</div><div class="cat-sub">${late?'⚠️ Venceu':'Vence'} ${fmtShort(it.due)}</div></div><b>${brl(it.value)}</b><button class="idel" style="margin-left:4px" title="Marcar como pago" onclick="payPriorityMark('${it.kind}',${it.id})">✓</button></div>`
+  return `<div style="display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)"><div style="font-size:19px">${covered?'✅':'⏳'}</div><div style="flex:1"><div style="font-weight:700">${esc(it.label)}</div><div class="cat-sub">${late?'⚠️ Venceu':'Vence'} ${fmtShort(it.due)} · soma até aqui ${brl(acc)}</div></div><b>${brl(it.value)}</b><button class="idel" style="margin-left:4px" title="Marcar como pago" onclick="payPriorityMark('${it.kind}',${it.id})">✓</button></div>`
 }
 function renderPayPriority(){
-  let list=payPriorityList(ppMonth),cash=cashAvailable(ppMonth),avail=cash.available,acc=0;
-  let rows=list.map(it=>{acc+=it.value;return ppRowHtml(it,acc<=avail+0.004)}).join('');
-  let leftover=avail-acc;
-  let head=(ppIncomeValue>0?`Entrou ${brl(ppIncomeValue)}. `:'')+`Recebido em ${monthLabel(ppMonth)}: ${brl(cash.received)} · já pago: ${brl(cash.paid)} → <b>disponível agora: ${brl(avail)}</b>.`;
-  let tail=!list.length?'Nenhuma conta pendente. 🎉':(leftover>=-0.004?`Dá pra cobrir tudo que está pendente, e ainda sobra ${brl(leftover)}.`:`Pela ordem de vencimento, essa é a prioridade — falta ${brl(-leftover)} pra cobrir tudo.`);
-  document.getElementById('ppInfo').innerHTML=head+'<br>'+tail;
-  document.getElementById('ppList').innerHTML=rows||'<div class="empty">Nenhuma conta fixa, fatura ou conta a pagar pendente.</div>'
+  let list=payPriorityList(ppMonth),f=payFlows(ppMonth),avail=f.available,acc=0,totalPend=list.reduce((a,x)=>a+x.value,0),leftover=avail-totalPend;
+  let rows=list.map(it=>{acc+=it.value;return ppRowHtml(it,acc<=avail+0.004,acc)}).join('');
+  let just=document.getElementById('ppJust');just.style.display=ppIncomeValue>0?'block':'none';just.textContent=ppIncomeValue>0?`Entrou ${brl(ppIncomeValue)} agora.`:'';
+  let pct=v=>f.received>0.004?Math.max(0,Math.min(100,v/f.received*100)):0;
+  document.getElementById('ppSummary').innerHTML=`<div class="pp-tiles"><div class="pp-tile"><small>💰 Recebido no mês</small><b id="ppRecv">${brl(f.received)}</b></div><div class="pp-tile"><small>✅ Contas já pagas</small><b id="ppPaidBills" style="color:var(--green)">${brl(f.paidBills)}</b></div><div class="pp-tile"><small>🛒 Gastos do dia a dia</small><b id="ppDaily" style="color:var(--amber)">${brl(f.paidDaily)}</b></div><div class="pp-tile hl"><small>💵 Disponível agora</small><b id="ppAvail">${brl(avail)}</b></div></div><div class="pp-bar"><i style="width:${pct(f.paidBills)}%;background:var(--green)"></i><i style="width:${pct(f.paidDaily)}%;background:var(--amber)"></i></div><div class="mini-note" style="margin:0 0 2px">Disponível = recebido − contas pagas − gastos do dia a dia. Confira os itens de cada parte lá embaixo.</div>`;
+  document.getElementById('ppPendTotal').textContent=list.length?`${brl(totalPend)} · ${list.length}`:'';
+  document.getElementById('ppInfo').textContent=!list.length?'Nenhuma conta pendente. 🎉':(leftover>=-0.004?`Em ordem de vencimento. Com o disponível dá pra cobrir tudo que está pendente, e ainda sobra ${brl(leftover)}.`:`Em ordem de vencimento. Com o disponível dá pra pagar o que está marcado ✅. Falta ${brl(-leftover)} pra cobrir tudo.`);
+  document.getElementById('ppList').innerHTML=rows||'<div class="empty">Nenhuma conta fixa, fatura ou conta a pagar pendente.</div>';
+  const grp=(k,title,total,items,fmt)=>`<div class="pp-grp" onclick="togglePpGroup('${k}')"><span>${ppOpen[k]?'▾':'▸'} ${title}</span><span>${brl(total)} · ${items.length}</span></div>`+(ppOpen[k]?(items.length?items.map(fmt).join(''):'<div class="empty">Nada por aqui.</div>'):'');
+  let paid=`<div class="pp-sec"><span>✅ Já paguei</span><span id="ppPaidTotal">${brl(f.paidBills)} · ${f.bills.length}</span></div>`+(f.bills.length?f.bills.map(b=>`<div class="pp-paidrow"><div style="font-size:18px">${b.icon}</div><div style="flex:1"><div style="font-weight:700">${esc(b.label)}</div><div class="cat-sub">${b.tag} · ${fmtShort(b.date)}</div></div><b style="color:var(--green)">${brl(b.value)}</b>${b.undo?`<button class="idel" style="margin-left:4px" title="Desfazer (volta pra pendente)" onclick="${b.undo}">↩</button>`:''}</div>`).join(''):'<div class="empty">Nenhuma conta marcada como paga neste mês ainda.</div>');
+  paid+=grp('daily','🛒 Gastos do dia a dia',f.paidDaily,f.daily,d=>`<div class="pp-paidrow"><div style="flex:1"><div style="font-weight:700">${esc(d.label)}</div><div class="cat-sub">${esc(d.sub)} · ${fmtShort(d.date)}</div></div><b style="color:var(--amber)">${brl(d.value)}</b></div>`);
+  paid+=grp('inc','💰 Entradas do mês',f.received,f.incomes,d=>`<div class="pp-paidrow"><div style="flex:1"><div style="font-weight:700">${esc(d.label)}</div><div class="cat-sub">${fmtShort(d.date)}</div></div><b style="color:var(--green)">${brl(d.value)}</b></div>`);
+  if(f.credit>0.004)paid+=`<div class="mini-note" style="margin-top:8px">💳 Você também lançou ${brl(f.credit)} em compras no crédito. Elas não foram descontadas do disponível: só saem do bolso quando a fatura for paga.</div>`;
+  document.getElementById('ppPaidBox').innerHTML=paid
 }
+function togglePpGroup(k){ppOpen[k]=!ppOpen[k];renderPayPriority()}
 function showPayPriority(value,mk){
   if(payPriorityList(mk).length===0)return;
   ppIncomeValue=value;ppMonth=mk;
@@ -1176,6 +1203,11 @@ function showPayPriority(value,mk){
 function openPayPriority(){ppIncomeValue=0;ppMonth=dashboardMonth;renderPayPriority();document.getElementById('payPriorityOverlay').classList.add('show')}
 function payPriorityMark(kind,id){
   if(kind==='tx'){let tx=data.transactions.find(x=>x.id===id);if(tx){tx.paid=true;tx.paidAt=iso(new Date());save();showToast('Marcado como pago')}}
+  else togglePaid(kind,id,ppMonth);
+  renderPayPriority()
+}
+function payPriorityUndo(kind,id){
+  if(kind==='tx'){let tx=data.transactions.find(x=>x.id===id);if(tx){tx.paid=false;delete tx.paidAt;save();showToast('Voltou pra lista de pendentes')}}
   else togglePaid(kind,id,ppMonth);
   renderPayPriority()
 }
@@ -1262,6 +1294,7 @@ function normalizeBackupData(x){
   if(!Array.isArray(source.receivables))source.receivables=[];
   if(!source.catColors||typeof source.catColors!=='object'||Array.isArray(source.catColors))source.catColors={};
   if(!Array.isArray(source.challenges))source.challenges=[];
+  purgeOrphanPayments(source);
   ensureCatsOn(source);
   return source
 }
