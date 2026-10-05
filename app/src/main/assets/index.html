@@ -233,7 +233,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.48 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.49 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -284,10 +284,14 @@
 </div></div>
 
 <div class="overlay" id="invoiceBaseOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
-  <div class="handle"></div><h3>Valor atual da fatura</h3>
-  <p class="mini-note" id="invoiceBaseHelp">Informe o valor que a fatura já possui neste mês. Os novos gastos serão somados a ele.</p>
-  <div class="money-input"><span>R$</span><input id="invoiceBaseValue" inputmode="decimal" placeholder="0,00" /></div>
-  <button class="save" onclick="saveInvoiceBase()">Salvar valor da fatura</button><button class="ghost" onclick="closeSheets()">Cancelar</button>
+  <div class="handle"></div><h3>Valor da fatura</h3>
+  <p class="mini-note" id="invoiceBaseHelp" style="margin-top:0"></p>
+  <div class="card" id="ibBreak" style="padding:10px 14px;margin:8px 0"></div>
+  <div class="type" style="margin-bottom:6px"><button id="ibModeTotal" class="active" onclick="setIbMode('total')">Definir o total</button><button id="ibModeBase" onclick="setIbMode('base')">Somar aos gastos</button></div>
+  <p class="mini-note" id="ibModeNote" style="margin-top:0"></p>
+  <div class="money-input"><span>R$</span><input id="invoiceBaseValue" inputmode="decimal" placeholder="0,00" oninput="updateIbPreview()" /></div>
+  <p class="mini-note" id="ibPreview" style="font-weight:700;margin:6px 0 0"></p>
+  <button class="save" onclick="saveInvoiceBase()">Salvar</button><button class="ghost" onclick="closeSheets()">Cancelar</button>
 </div></div>
 
 <div class="overlay" id="cardItemOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
@@ -600,7 +604,7 @@ function saveCard(){
 function selectedCard(){return data.cards.find(x=>x.id===currentCardId)||data.cards[0]||null}
 function invoiceBase(cardId,month){let x=data.cardInvoices.find(i=>i.cardId===cardId&&i.month===month);return x?Number(x.baseValue||0):0}
 function invoiceItems(cardId,month){return data.cardItems.filter(i=>i.cardId===cardId&&i.month===month)}
-function invoiceTotalFor(cardId,month){return invoiceBase(cardId,month)+invoiceItems(cardId,month).filter(b=>!b.ignored).reduce((a,b)=>a+((b.refund||b.advance)?-Number(b.value||0):Number(b.value||0)),0)}
+function invoiceTotalFor(cardId,month){return Math.round((invoiceBase(cardId,month)+invoiceItems(cardId,month).filter(b=>!b.ignored).reduce((a,b)=>a+((b.refund||b.advance)?-Number(b.value||0):Number(b.value||0)),0))*100)/100}
 function currentCardsTotal(mk=dashboardMonth){return data.cards.reduce((sum,c)=>sum+invoiceTotalFor(c.id,mk),0)}
 function setCard(id){currentCardId=id;renderCards()}
 function setInvoiceMonth(m){currentInvoiceMonth=m;renderCards()}
@@ -639,8 +643,46 @@ function copyPreviousInvoice(){
   showToast(`Fatura de ${monthLabel(previous)} copiada para ${monthLabel(currentInvoiceMonth)}`)
 }
 
-function openInvoiceBase(){let c=selectedCard();if(!c)return showToast('Cadastre um cartão primeiro');document.getElementById('invoiceBaseValue').value=invoiceBase(c.id,currentInvoiceMonth)?invoiceBase(c.id,currentInvoiceMonth).toFixed(2).replace('.',','):'';document.getElementById('invoiceBaseHelp').textContent=`${c.name} · fatura ${monthLabel(currentInvoiceMonth)}. Informe o valor que ela já possui antes dos novos gastos.`;document.getElementById('invoiceBaseOverlay').classList.add('show')}
-function saveInvoiceBase(){let c=selectedCard();if(!c)return;let value=parseMoney(document.getElementById('invoiceBaseValue').value);let x=data.cardInvoices.find(i=>i.cardId===c.id&&i.month===currentInvoiceMonth);if(x)x.baseValue=value;else data.cardInvoices.push({id:Date.now(),cardId:c.id,month:currentInvoiceMonth,baseValue:value});dashboardMonth=currentInvoiceMonth;localStorage.setItem('md_dashboard_month',dashboardMonth);save();closeSheets();showToast('Valor da fatura atualizado')}
+let ibMode='total';
+function ibNumbers(){let c=selectedCard();if(!c)return null;let r2=v=>Math.round(v*100)/100,base=r2(invoiceBase(c.id,currentInvoiceMonth)),total=r2(invoiceTotalFor(c.id,currentInvoiceMonth)),count=invoiceItems(c.id,currentInvoiceMonth).filter(x=>!x.ignored).length;return{c,base,total,items:r2(total-base),count}}
+function openInvoiceBase(mode){
+  let n=ibNumbers();if(!n)return showToast('Cadastre um cartão primeiro');
+  document.getElementById('invoiceBaseHelp').textContent=`${n.c.name} · fatura de ${monthLabel(currentInvoiceMonth)}`;
+  document.getElementById('ibBreak').innerHTML=`<div style="display:flex;justify-content:space-between;padding:3px 0"><span>Gastos lançados (${n.count})</span><b>${brl(n.items)}</b></div><div style="display:flex;justify-content:space-between;padding:3px 0"><span>Valor acumulado</span><b>${brl(n.base)}</b></div><div style="display:flex;justify-content:space-between;padding:6px 0 2px;margin-top:4px;border-top:1px solid var(--line)"><span><b>Total da fatura</b></span><b>${brl(n.total)}</b></div>`;
+  setIbMode(mode==='base'?'base':'total');
+  document.getElementById('invoiceBaseOverlay').classList.add('show')
+}
+function setIbMode(m){
+  ibMode=m;let n=ibNumbers();if(!n)return;
+  document.getElementById('ibModeTotal').classList.toggle('active',m==='total');
+  document.getElementById('ibModeBase').classList.toggle('active',m==='base');
+  document.getElementById('ibModeNote').textContent=m==='total'
+    ?'Digite o TOTAL que o banco mostra. O app calcula sozinho a diferença pro que você já lançou e guarda como "valor acumulado".'
+    :'Digite um valor que será SOMADO aos gastos já lançados (pra quem não quer lançar item por item).';
+  let cur=m==='total'?n.total:n.base;
+  document.getElementById('invoiceBaseValue').value=cur>0.004?cur.toFixed(2).replace('.',','):'';
+  updateIbPreview()
+}
+function updateIbPreview(){
+  let n=ibNumbers();if(!n)return;
+  let v=parseMoney(document.getElementById('invoiceBaseValue').value),el=document.getElementById('ibPreview');
+  if(ibMode==='total'){
+    let nb=Math.round((v-n.items)*100)/100;
+    if(nb<-0.004){el.textContent=`⚠️ Os gastos já lançados somam ${brl(n.items)}, mais que ${brl(v)}.`;el.style.color='var(--red)';return}
+    el.style.color='';el.textContent=`Total da fatura ficará ${brl(v)}`+(nb>0.004?` (gastos ${brl(n.items)} + acumulado ${brl(nb)})`:'')
+  }else{
+    el.style.color='';el.textContent=`Total da fatura ficará ${brl(n.items+v)} (gastos ${brl(n.items)} + acumulado ${brl(v)})`
+  }
+}
+function saveInvoiceBase(){
+  let n=ibNumbers();if(!n)return;let c=n.c,v=parseMoney(document.getElementById('invoiceBaseValue').value);
+  let value=ibMode==='total'?Math.round((v-n.items)*100)/100:v;
+  if(ibMode==='total'&&value<-0.004)return showToast(`Os gastos lançados (${brl(n.items)}) já passam desse total`);
+  value=Math.max(0,value);
+  let x=data.cardInvoices.find(i=>i.cardId===c.id&&i.month===currentInvoiceMonth);if(x)x.baseValue=value;else data.cardInvoices.push({id:Date.now(),cardId:c.id,month:currentInvoiceMonth,baseValue:value});
+  dashboardMonth=currentInvoiceMonth;localStorage.setItem('md_dashboard_month',dashboardMonth);save();closeSheets();
+  showToast(ibMode==='total'?`Total da fatura agora é ${brl(invoiceTotalFor(c.id,currentInvoiceMonth))}`:'Valor da fatura atualizado')
+}
 function openCardItem(){let c=selectedCard();if(!c)return showToast('Cadastre um cartão primeiro');editingCardItemId=null;document.getElementById('ciTitle').textContent='Acrescentar gasto na fatura';document.getElementById('ciDeleteBtn').style.display='none';document.getElementById('ciEditNote').style.display='none';cats('expense',document.getElementById('ciCategory'));document.getElementById('ciCategory').value='Outros';setCiMore(false);setCiKind('expense');ciIgnored=false;document.getElementById('ciIgnoreSwitch').classList.remove('on');document.getElementById('ciValue').value='';document.getElementById('ciDesc').value='';document.getElementById('ciDate').value=iso(new Date());document.getElementById('ciInstallments').value=1;setCiInstMode('total');updateCiInstModeUI();document.getElementById('cardItemOverlay').classList.add('show')}
 
 function toggleCiIgnore(){ciIgnored=!ciIgnored;document.getElementById('ciIgnoreSwitch').classList.toggle('on',ciIgnored)}
@@ -681,7 +723,7 @@ function deleteEditingCardItem(){if(editingCardItemId===null)return;let id=editi
 function deleteCardItem(id){let it=data.cardItems.find(x=>x.id===id);if(!it)return;if(it.group){if(confirm('Essa compra é parcelada. Remover TODAS as parcelas? (Cancelar = escolher só esta)')){data.cardItems=data.cardItems.filter(x=>x.group!==it.group);save();showToast('Compra parcelada removida');return}if(confirm('Remover só esta parcela?')){data.cardItems=data.cardItems.filter(x=>x.id!==id);save()}return}if(confirm('Remover este gasto da fatura?')){data.cardItems=data.cardItems.filter(x=>x.id!==id);save()}}
 function deleteSelectedCard(){let c=selectedCard();if(!c)return;if(confirm(`Excluir o cartão ${c.name} e todas as faturas dele?`)){data.cards=data.cards.filter(x=>x.id!==c.id);data.cardInvoices=data.cardInvoices.filter(x=>x.cardId!==c.id);data.cardItems=data.cardItems.filter(x=>x.cardId!==c.id);purgeOrphanPayments(data);currentCardId=data.cards[0]?.id||null;save();showToast('Cartão excluído')}}
 function monthLabel(k){let [y,m]=k.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}
-function renderCards(){let empty=document.getElementById('cardsEmpty'),content=document.getElementById('cardsContent');if(!empty||!content)return;if(!data.cards.length){empty.style.display='block';content.style.display='none';return}empty.style.display='none';content.style.display='block';if(!currentCardId||!data.cards.some(c=>c.id===currentCardId))currentCardId=data.cards[0].id;let c=selectedCard();document.getElementById('cardTabs').innerHTML=data.cards.map(x=>`<button class="card-chip${x.id===c.id?' active':''}" onclick="setCard(${x.id})">💳 ${esc(x.name)}</button>`).join('');document.getElementById('selectedCardName').textContent=c.name;document.getElementById('selectedCardMeta').textContent=`Vence dia ${c.dueDay}`;let total=invoiceTotalFor(c.id,currentInvoiceMonth),paid=isPaid('card',c.id,currentInvoiceMonth);document.getElementById('invoiceMonthLabel').textContent=`Fatura de ${monthLabel(currentInvoiceMonth)}`;document.getElementById('invoiceTotal').textContent=brl(total);document.getElementById('invoiceLimitInfo').textContent='Edite o valor atual ou acrescente novas compras abaixo.';document.getElementById('invoiceStatus').textContent=paid?`✓ ${paidLabel('card',c.id,currentInvoiceMonth)}`:`Pendente · vence dia ${c.dueDay}`;document.getElementById('invoiceStatus').classList.toggle('paid-sub',paid);let payBtn=document.getElementById('invoicePaidBtn');payBtn.textContent=paid?'↩ Desmarcar como paga':'✓ Marcar fatura como paga';payBtn.classList.toggle('paid-btn',paid);buildInvoiceMonths();let rBtn=document.getElementById('reorganizeBtn');if(rBtn)rBtn.style.display=c.closingDay?'block':'none';let base=invoiceBase(c.id,currentInvoiceMonth),items=[...invoiceItems(c.id,currentInvoiceMonth)].sort(invoiceSortMode==='added'?(a,b)=>a.id-b.id:(a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id),rows='';if(base>0)rows+=`<div class="invoice-item"><div class="ii">🧾</div><div><div class="ititle">Valor já acumulado</div><div class="isub">Base informada para esta fatura</div></div><b>${brl(base)}</b><span></span></div>`;rows+=items.map(x=>`<div class="invoice-item${x.ignored?' ignored':''}" style="cursor:pointer" onclick="openEditCardItem(${x.id})"><div class="ii">${x.refund?'↩️':(x.advance?'💵':icon(x.category))}</div><div><div class="ititle">${esc(x.desc)}</div><div class="isub">${esc(x.category)}${x.refund?' · Estorno':(x.advance?' · Antecipação':'')}${x.ignored?' · 🚫 Ignorado':''} · ${new Date((x.date||iso(new Date()))+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</div></div><b class="${(x.refund||x.advance)?'refund':''}">${(x.refund||x.advance)?'+ ':''}${brl(x.value)}</b><button class="idup" title="Duplicar" onclick="event.stopPropagation();duplicateCardItem(${x.id})">📋</button><button class="idel" onclick="event.stopPropagation();deleteCardItem(${x.id})">×</button></div>`).join('');document.getElementById('invoiceList').innerHTML=rows||'<div class="empty">Nenhum valor nesta fatura ainda.<br>Defina o valor atual ou acrescente um gasto.</div>'}
+function renderCards(){let empty=document.getElementById('cardsEmpty'),content=document.getElementById('cardsContent');if(!empty||!content)return;if(!data.cards.length){empty.style.display='block';content.style.display='none';return}empty.style.display='none';content.style.display='block';if(!currentCardId||!data.cards.some(c=>c.id===currentCardId))currentCardId=data.cards[0].id;let c=selectedCard();document.getElementById('cardTabs').innerHTML=data.cards.map(x=>`<button class="card-chip${x.id===c.id?' active':''}" onclick="setCard(${x.id})">💳 ${esc(x.name)}</button>`).join('');document.getElementById('selectedCardName').textContent=c.name;document.getElementById('selectedCardMeta').textContent=`Vence dia ${c.dueDay}`;let total=invoiceTotalFor(c.id,currentInvoiceMonth),paid=isPaid('card',c.id,currentInvoiceMonth);document.getElementById('invoiceMonthLabel').textContent=`Fatura de ${monthLabel(currentInvoiceMonth)}`;document.getElementById('invoiceTotal').textContent=brl(total);document.getElementById('invoiceLimitInfo').textContent='Edite o valor atual ou acrescente novas compras abaixo.';document.getElementById('invoiceStatus').textContent=paid?`✓ ${paidLabel('card',c.id,currentInvoiceMonth)}`:`Pendente · vence dia ${c.dueDay}`;document.getElementById('invoiceStatus').classList.toggle('paid-sub',paid);let payBtn=document.getElementById('invoicePaidBtn');payBtn.textContent=paid?'↩ Desmarcar como paga':'✓ Marcar fatura como paga';payBtn.classList.toggle('paid-btn',paid);buildInvoiceMonths();let rBtn=document.getElementById('reorganizeBtn');if(rBtn)rBtn.style.display=c.closingDay?'block':'none';let base=invoiceBase(c.id,currentInvoiceMonth),items=[...invoiceItems(c.id,currentInvoiceMonth)].sort(invoiceSortMode==='added'?(a,b)=>a.id-b.id:(a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id),rows='';if(base>0)rows+=`<div class="invoice-item" style="cursor:pointer" onclick="openInvoiceBase('base')"><div class="ii">🧾</div><div><div class="ititle">Valor já acumulado</div><div class="isub">Somado aos gastos abaixo · toque para editar</div></div><b>${brl(base)}</b><span></span></div>`;rows+=items.map(x=>`<div class="invoice-item${x.ignored?' ignored':''}" style="cursor:pointer" onclick="openEditCardItem(${x.id})"><div class="ii">${x.refund?'↩️':(x.advance?'💵':icon(x.category))}</div><div><div class="ititle">${esc(x.desc)}</div><div class="isub">${esc(x.category)}${x.refund?' · Estorno':(x.advance?' · Antecipação':'')}${x.ignored?' · 🚫 Ignorado':''} · ${new Date((x.date||iso(new Date()))+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</div></div><b class="${(x.refund||x.advance)?'refund':''}">${(x.refund||x.advance)?'+ ':''}${brl(x.value)}</b><button class="idup" title="Duplicar" onclick="event.stopPropagation();duplicateCardItem(${x.id})">📋</button><button class="idel" onclick="event.stopPropagation();deleteCardItem(${x.id})">×</button></div>`).join('');document.getElementById('invoiceList').innerHTML=rows||'<div class="empty">Nenhum valor nesta fatura ainda.<br>Defina o valor atual ou acrescente um gasto.</div>'}
 function purgeOrphanPayments(d){if(!Array.isArray(d.payments))return;d.payments=d.payments.filter(p=>p.kind==='fixed'?d.fixed.some(f=>f.id===p.itemId):(p.kind==='card'?d.cards.some(c=>c.id===p.itemId):true))}
 function deleteFixed(id){if(confirm('Remover esta conta fixa?')){data.fixed=data.fixed.filter(x=>x.id!==id);purgeOrphanPayments(data);save()}}
 function monthKey(d){return d.slice(0,7)}
@@ -864,7 +906,7 @@ function editEntry(kind,id){
   if(kind==='tx')return openEditTransaction(id);
   if(kind==='fixed')return openFixed(id);
   if(kind==='card')return openEditCardItem(id);
-  if(kind==='base'){currentCardId=id;currentInvoiceMonth=dashboardMonth;return openInvoiceBase()}
+  if(kind==='base'){currentCardId=id;currentInvoiceMonth=dashboardMonth;return openInvoiceBase('base')}
 }
 function goCardsMonth(){setInvoiceMonth(dashboardMonth);go('cards')}
 function openCatDetail(cat){
@@ -1157,7 +1199,6 @@ function payFlows(mk){
     else if(p.kind==='card'){let c=data.cards.find(x=>x.id===p.itemId);if(c)bills.push({icon:'💳',label:'Fatura '+c.name,tag:'Fatura do cartão',date:p.paidAt||mk+'-01',value:num(p.amount),undo:`payPriorityUndo('card',${p.itemId})`})}
   });
   tx.filter(x=>x.type==='expense'&&x.dueDate&&x.paid).forEach(x=>bills.push({icon:'🧾',label:x.desc,tag:'Conta a pagar',date:x.paidAt||x.dueDate,value:num(x.value),undo:`payPriorityUndo('tx',${x.id})`}));
-  data.cardItems.filter(x=>x.advance&&!x.ignored&&monthKey(x.date||'')===mk).forEach(x=>{let c=data.cards.find(k=>k.id===x.cardId);bills.push({icon:'💵',label:x.desc+(c?' · '+c.name:''),tag:'Antecipação',date:x.date,value:num(x.value),undo:''})});
   bills.sort(byDate);
   let exp=tx.filter(x=>x.type==='expense'&&!x.dueDate);
   let daily=exp.filter(x=>x.account!=='Crédito').map(x=>({label:x.desc,date:x.date,value:num(x.value),sub:[x.category,x.account].filter(Boolean).join(' · ')})).sort(byDate);
