@@ -112,6 +112,7 @@
       <button class="quick" onclick="go('fixed')"><span class="ico">🔁</span><small>Fixas</small></button>
       <button class="quick" onclick="openVoice()"><span class="ico">🎙️</span><small>Por voz</small></button>
     </div>
+    <button class="recv-banner" style="margin:12px 0 0" onclick="openPayPriority()"><span class="rb-ic">💡</span><span class="rb-txt"><span class="rb-title">O que pagar</span><div class="rb-sub" id="payHomeSub">Veja o que dá pra pagar com o que entrou</div></span><span class="rb-chev">›</span></button>
     <div class="section"><h2>Minhas Metas</h2><button onclick="openGoal(null)">+ Meta</button></div>
     <div class="card" id="goalsHomeCard" style="margin-bottom:6px"></div>
     <p class="mini-note" style="margin:0 0 6px" id="goalsHomeNote"></p>
@@ -227,7 +228,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.46 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.47 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -251,6 +252,8 @@
   <div class="field"><label>Forma / conta</label><select id="account"><option>Pix</option><option>Débito</option><option>Crédito</option><option>Dinheiro</option><option>Conta bancária</option></select></div>
   <div class="toggle" id="recurringRow"><div><b>Repetir todo mês</b><div style="font-size:12px;color:var(--muted);margin-top:3px">Cria uma conta fixa mensal</div></div><button class="switch" id="recurringSwitch" onclick="toggleRecurring()"></button></div>
   <div class="toggle" id="ignoreRow"><div><b>Ignorar</b><div style="font-size:12px;color:var(--muted);margin-top:3px">Não conta no saldo nem nos relatórios</div></div><button class="switch" id="ignoreSwitch" onclick="toggleIgnore()"></button></div>
+  <div class="toggle" id="payLaterRow"><div><b>Conta a pagar</b><div style="font-size:12px;color:var(--muted);margin-top:3px">Ainda não paguei. Entra na lista "O que pagar" pelo vencimento</div></div><button class="switch" id="payLaterSwitch" onclick="togglePayLater()"></button></div>
+  <div class="field" id="dueDateField" style="display:none"><label>Vencimento</label><input id="txDueDate" type="date" /></div>
   <button class="save" id="transactionSaveButton" onclick="saveTransaction()">Salvar lançamento</button>
   <button class="ghost" id="transactionDeleteButton" style="display:none;color:#ff858e" onclick="deleteEditingTransaction()">Excluir lançamento</button>
   <button class="ghost" onclick="closeSheets()">Cancelar</button>
@@ -479,15 +482,24 @@ let currentType='expense', recurring=false, editingTransactionId=null, voiceDraf
 function save(){localStorage.setItem('md_data',JSON.stringify(data));render();syncNativeReminders()}
 function showToast(t){let e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800)}
 function cats(type,el){let list=(data.cats&&data.cats[type==='income'?'income':'expense'])||(type==='income'?CATS_INC:CATS_EXP);el.innerHTML=list.map(c=>`<option>${esc(c)}</option>`).join('')+'<option value="__new__">➕ Nova categoria…</option>';el.dataset.prev=el.value}
-function setType(t){currentType=t;document.getElementById('typeExpense').classList.toggle('active',t==='expense');document.getElementById('typeIncome').classList.toggle('active',t==='income');cats(t,document.getElementById('category'));if(editingTransactionId===null)categoryManuallySet=false;if(editingTransactionId===null){document.getElementById('recurringRow').style.display=t==='expense'?'flex':'none';if(t!=='expense'){recurring=false;document.getElementById('recurringSwitch').classList.remove('on')}}}
+function setType(t){currentType=t;document.getElementById('typeExpense').classList.toggle('active',t==='expense');document.getElementById('typeIncome').classList.toggle('active',t==='income');cats(t,document.getElementById('category'));if(editingTransactionId===null)categoryManuallySet=false;if(editingTransactionId===null){document.getElementById('recurringRow').style.display=t==='expense'?'flex':'none';if(t!=='expense'){recurring=false;document.getElementById('recurringSwitch').classList.remove('on')}}updatePayLaterUI()}
 function toggleIgnore(){txIgnored=!txIgnored;document.getElementById('ignoreSwitch').classList.toggle('on',txIgnored)}
-function toggleRecurring(){recurring=!recurring;document.getElementById('recurringSwitch').classList.toggle('on',recurring)}
-function openAdd(t='expense'){editingTransactionId=null;currentType=t;recurring=false;setType(t);document.getElementById('transactionTitle').textContent='Novo lançamento';document.getElementById('transactionSaveButton').textContent='Salvar lançamento';document.getElementById('transactionDeleteButton').style.display='none';document.getElementById('recurringRow').style.display=t==='expense'?'flex':'none';document.getElementById('recurringSwitch').classList.remove('on');txIgnored=false;document.getElementById('ignoreSwitch').classList.remove('on');categoryManuallySet=false;document.getElementById('value').value='';document.getElementById('desc').value='';document.getElementById('txTags').value='';document.getElementById('date').value=iso(new Date());document.getElementById('account').value='Pix';document.getElementById('addOverlay').classList.add('show')}
-function openEditTransaction(id){let tx=data.transactions.find(x=>x.id===id);if(!tx)return;editingTransactionId=id;currentType=tx.type||'expense';recurring=false;setType(currentType);document.getElementById('transactionTitle').textContent='Editar lançamento';document.getElementById('transactionSaveButton').textContent='Salvar alterações';document.getElementById('transactionDeleteButton').style.display='block';document.getElementById('recurringRow').style.display='none';document.getElementById('value').value=Number(tx.value||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('desc').value=tx.desc||'';document.getElementById('date').value=tx.date||iso(new Date());document.getElementById('category').value=tx.category||document.getElementById('category').value;document.getElementById('txTags').value=(tx.tags||[]).join(', ');txIgnored=!!tx.ignored;document.getElementById('ignoreSwitch').classList.toggle('on',txIgnored);categoryManuallySet=true;let account=document.getElementById('account');if(tx.account&&!Array.from(account.options).some(o=>o.value===tx.account)){let opt=document.createElement('option');opt.value=tx.account;opt.textContent=tx.account;account.appendChild(opt)}account.value=tx.account||'Pix';document.getElementById('addOverlay').classList.add('show')}
-let editingFixedId=null,editingCardItemId=null,ciKind='expense',txIgnored=false,ciIgnored=false,categoryManuallySet=false,ceColorVal='',ciInstMode='total';
+
+function fmtShort(d){return new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}).replace('.','')}
+function togglePayLater(){txPayLater=!txPayLater;document.getElementById('payLaterSwitch').classList.toggle('on',txPayLater);if(txPayLater&&!document.getElementById('txDueDate').value)document.getElementById('txDueDate').value=document.getElementById('date').value||iso(new Date());updatePayLaterUI()}
+function updatePayLaterUI(){
+  let show=currentType==='expense'&&!recurring;
+  document.getElementById('payLaterRow').style.display=show?'flex':'none';
+  if(!show){txPayLater=false;document.getElementById('payLaterSwitch').classList.remove('on')}
+  document.getElementById('dueDateField').style.display=(show&&txPayLater)?'block':'none'
+}
+function toggleRecurring(){recurring=!recurring;document.getElementById('recurringSwitch').classList.toggle('on',recurring);updatePayLaterUI()}
+function openAdd(t='expense'){editingTransactionId=null;currentType=t;recurring=false;setType(t);document.getElementById('transactionTitle').textContent='Novo lançamento';document.getElementById('transactionSaveButton').textContent='Salvar lançamento';document.getElementById('transactionDeleteButton').style.display='none';document.getElementById('recurringRow').style.display=t==='expense'?'flex':'none';document.getElementById('recurringSwitch').classList.remove('on');txIgnored=false;document.getElementById('ignoreSwitch').classList.remove('on');txPayLater=false;document.getElementById('payLaterSwitch').classList.remove('on');document.getElementById('txDueDate').value='';updatePayLaterUI();categoryManuallySet=false;document.getElementById('value').value='';document.getElementById('desc').value='';document.getElementById('txTags').value='';document.getElementById('date').value=iso(new Date());document.getElementById('account').value='Pix';document.getElementById('addOverlay').classList.add('show')}
+function openEditTransaction(id){let tx=data.transactions.find(x=>x.id===id);if(!tx)return;editingTransactionId=id;currentType=tx.type||'expense';recurring=false;setType(currentType);document.getElementById('transactionTitle').textContent='Editar lançamento';document.getElementById('transactionSaveButton').textContent='Salvar alterações';document.getElementById('transactionDeleteButton').style.display='block';document.getElementById('recurringRow').style.display='none';document.getElementById('value').value=Number(tx.value||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('desc').value=tx.desc||'';document.getElementById('date').value=tx.date||iso(new Date());document.getElementById('category').value=tx.category||document.getElementById('category').value;document.getElementById('txTags').value=(tx.tags||[]).join(', ');txIgnored=!!tx.ignored;document.getElementById('ignoreSwitch').classList.toggle('on',txIgnored);txPayLater=!!(tx.dueDate&&!tx.paid);document.getElementById('payLaterSwitch').classList.toggle('on',txPayLater);document.getElementById('txDueDate').value=tx.dueDate||'';updatePayLaterUI();categoryManuallySet=true;let account=document.getElementById('account');if(tx.account&&!Array.from(account.options).some(o=>o.value===tx.account)){let opt=document.createElement('option');opt.value=tx.account;opt.textContent=tx.account;account.appendChild(opt)}account.value=tx.account||'Pix';document.getElementById('addOverlay').classList.add('show')}
+let txPayLater=false,editingFixedId=null,editingCardItemId=null,ciKind='expense',txIgnored=false,ciIgnored=false,categoryManuallySet=false,ceColorVal='',ciInstMode='total';
 function openFixed(id){editingFixedId=id||null;let f=id?data.fixed.find(x=>x.id===id):null;cats('expense',document.getElementById('fCategory'));document.getElementById('fTitle').textContent=f?'Editar conta fixa':'Nova conta fixa';document.getElementById('fValue').value=f?Number(f.value||0).toFixed(2).replace('.',','):'';document.getElementById('fDesc').value=f?f.desc:'';document.getElementById('fDay').value=f?f.day:'';if(f){let sel=document.getElementById('fCategory');sel.value=f.category;sel.dataset.prev=sel.value}document.getElementById('fixedOverlay').classList.add('show')}
 function closeSheets(){document.querySelectorAll('.overlay').forEach(x=>x.classList.remove('show'))}
-function saveTransaction(){let value=parseMoney(document.getElementById('value').value),desc=document.getElementById('desc').value.trim();if(!value||!desc)return showToast('Preencha valor e descrição');let date=document.getElementById('date').value||iso(new Date()),category=document.getElementById('category').value,account=document.getElementById('account').value,tags=[...new Set(document.getElementById('txTags').value.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean))];if(editingTransactionId!==null){let tx=data.transactions.find(x=>x.id===editingTransactionId);if(!tx)return showToast('Lançamento não encontrado');tx.type=currentType;tx.value=value;tx.desc=desc;tx.category=category;tx.date=date;tx.account=account;tx.tags=tags;tx.ignored=txIgnored;dashboardMonth=monthKey(date);localStorage.setItem('md_dashboard_month',dashboardMonth);editingTransactionId=null;save();closeSheets();showToast('Lançamento atualizado');return}dashboardMonth=monthKey(date);localStorage.setItem('md_dashboard_month',dashboardMonth);if(recurring&&currentType==='expense'){let day=Number(date.slice(8,10));data.fixed.push({id:Date.now(),value,desc,category,day,active:true});save();closeSheets();showToast('Conta fixa mensal criada');return}data.transactions.push({id:Date.now(),type:currentType,value,desc,category,date,account,tags,ignored:txIgnored});save();closeSheets();showToast((currentType==='expense'&&limitWarning(category,monthKey(date)))||'Lançamento salvo');if(currentType==='income')showPayPriority(value,monthKey(date))}
+function saveTransaction(){let value=parseMoney(document.getElementById('value').value),desc=document.getElementById('desc').value.trim();if(!value||!desc)return showToast('Preencha valor e descrição');let date=document.getElementById('date').value||iso(new Date()),category=document.getElementById('category').value,account=document.getElementById('account').value,tags=[...new Set(document.getElementById('txTags').value.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean))],due=document.getElementById('txDueDate').value,payLater=txPayLater&&currentType==='expense'&&!recurring;if(payLater&&!due)return showToast('Informe o vencimento da conta');if(editingTransactionId!==null){let tx=data.transactions.find(x=>x.id===editingTransactionId);if(!tx)return showToast('Lançamento não encontrado');tx.type=currentType;tx.value=value;tx.desc=desc;tx.category=category;tx.date=date;tx.account=account;tx.tags=tags;tx.ignored=txIgnored;if(payLater){tx.dueDate=due;tx.paid=false}else{delete tx.dueDate;delete tx.paid}dashboardMonth=monthKey(date);localStorage.setItem('md_dashboard_month',dashboardMonth);editingTransactionId=null;save();closeSheets();showToast('Lançamento atualizado');return}dashboardMonth=monthKey(date);localStorage.setItem('md_dashboard_month',dashboardMonth);if(recurring&&currentType==='expense'){let day=Number(date.slice(8,10));data.fixed.push({id:Date.now(),value,desc,category,day,active:true});save();closeSheets();showToast('Conta fixa mensal criada');return}let nt={id:Date.now(),type:currentType,value,desc,category,date,account,tags,ignored:txIgnored};if(payLater){nt.dueDate=due;nt.paid=false}data.transactions.push(nt);save();closeSheets();showToast((currentType==='expense'&&limitWarning(category,monthKey(date)))||(payLater?'Conta a pagar salva':'Lançamento salvo'));if(currentType==='income')showPayPriority(value,monthKey(date))}
 function deleteTransaction(id){let tx=data.transactions.find(x=>x.id===id);if(!tx)return showToast('Lançamento não encontrado');if(confirm(`Excluir o lançamento "${tx.desc}" de ${brl(tx.value)}?`)){data.transactions=data.transactions.filter(x=>x.id!==id);if(editingTransactionId===id)editingTransactionId=null;save();closeSheets();showToast('Lançamento excluído')}}
 function deleteEditingTransaction(){if(editingTransactionId===null)return;deleteTransaction(editingTransactionId)}
 function saveFixed(){let value=parseMoney(document.getElementById('fValue').value),desc=document.getElementById('fDesc').value.trim(),day=Math.min(31,Math.max(1,Number(document.getElementById('fDay').value)));if(!value||!desc||!day)return showToast('Preencha os dados da conta');let category=document.getElementById('fCategory').value;if(editingFixedId){let f=data.fixed.find(x=>x.id===editingFixedId);if(f){f.value=value;f.desc=desc;f.category=category;f.day=day}editingFixedId=null;save();closeSheets();showToast('Conta fixa atualizada');return}data.fixed.push({id:Date.now(),value,desc,category,day,active:true});save();closeSheets();showToast('Conta fixa adicionada')}
@@ -541,6 +553,7 @@ function syncNativeReminders(){
         })
       })
     });
+    data.transactions.filter(x=>x.type==='expense'&&x.dueDate&&!x.paid&&!x.ignored).forEach(x=>{reminders.push({key:`tx:${x.id}`,dueDate:x.dueDate,title:'Conta vence em 2 dias',message:`${x.desc} vence ${fmtShort(x.dueDate)}. Valor: ${brl(x.value)}.`})});
     window.AndroidVoice.syncReminders(JSON.stringify(reminders))
   }catch(e){}
 }
@@ -663,7 +676,7 @@ function renderCards(){let empty=document.getElementById('cardsEmpty'),content=d
 function deleteFixed(id){if(confirm('Remover esta conta fixa?')){data.fixed=data.fixed.filter(x=>x.id!==id);save()}}
 function monthKey(d){return d.slice(0,7)}
 function icon(cat){let m={'Alimentação':'🛒','Moradia':'🏠','Transporte':'🚕','Carro':'🚗','Moto':'🏍️','Pensão':'👤','Seguros':'🛡️','Saúde':'❤️','Educação':'🎓','Lazer':'🎬','Compras':'🛍️','Contas':'🧾','Salário':'💼','Freelance':'💻','Reembolso':'↩️','Venda':'🏷️','Rendimento':'📈'};return (data.catIcons&&data.catIcons[cat])||m[cat]||'•'}
-function txHtml(x){let d=new Date(x.date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}),tags=x.tags&&x.tags.length?`<div class="tagrow">${x.tags.map(t=>`<span class="tagchip" onclick="event.stopPropagation();quickTagFilter('${esc(t)}')">#${esc(t)}</span>`).join('')}</div>`:'';return `<div class="tx${x.ignored?' ignored':''}" onclick="openEditTransaction(${x.id})" title="Toque para editar"><div class="icon">${icon(x.category)}</div><div><div class="name">${esc(x.desc)}</div><div class="meta">${esc(x.category)} · ${d}${x.account?' · '+esc(x.account):''}${x.receivableId?(' · 🎯 '+esc((data.receivables.find(r=>r.id===x.receivableId)||{}).desc||'Recebimento')):''}${x.ignored?' · 🚫 Ignorado':''} · toque para editar</div>${tags}</div><div class="amount ${x.type}">${x.type==='expense'?'−':'+'} ${brl(x.value)}</div><button class="tdel" onclick="event.stopPropagation();deleteTransaction(${x.id})" aria-label="Excluir lançamento">🗑</button></div>`}
+function txHtml(x){let d=new Date(x.date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}),tags=x.tags&&x.tags.length?`<div class="tagrow">${x.tags.map(t=>`<span class="tagchip" onclick="event.stopPropagation();quickTagFilter('${esc(t)}')">#${esc(t)}</span>`).join('')}</div>`:'';return `<div class="tx${x.ignored?' ignored':''}" onclick="openEditTransaction(${x.id})" title="Toque para editar"><div class="icon">${icon(x.category)}</div><div><div class="name">${esc(x.desc)}</div><div class="meta">${esc(x.category)} · ${d}${x.account?' · '+esc(x.account):''}${x.receivableId?(' · 🎯 '+esc((data.receivables.find(r=>r.id===x.receivableId)||{}).desc||'Recebimento')):''}${(x.dueDate&&!x.paid)?` · ⏳ A pagar · vence ${fmtShort(x.dueDate)}`:''}${(x.dueDate&&x.paid)?' · ✅ Pago':''}${x.ignored?' · 🚫 Ignorado':''} · toque para editar</div>${tags}</div><div class="amount ${x.type}">${x.type==='expense'?'−':'+'} ${brl(x.value)}</div><button class="tdel" onclick="event.stopPropagation();deleteTransaction(${x.id})" aria-label="Excluir lançamento">🗑</button></div>`}
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function setDashboardMonth(m){dashboardMonth=m;localStorage.setItem('md_dashboard_month',m);render()}
 function buildHomeMonths(){let el=document.getElementById('homeMonthStrip');if(!el)return;let now=new Date(),months=[];for(let i=-3;i<=6;i++){let d=new Date(now.getFullYear(),now.getMonth()+i,1),k=iso(d).slice(0,7);months.push(k)}if(!months.includes(dashboardMonth))months.push(dashboardMonth);months=[...new Set(months)].sort();el.innerHTML=months.map(k=>{let [y,m]=k.split('-').map(Number),d=new Date(y,m-1,1),label=d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','');return `<button class="pill${k===dashboardMonth?' active':''}" onclick="setDashboardMonth('${k}')">${label}</button>`}).join('');setTimeout(()=>el.querySelector('.active')?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}),0)}
@@ -718,7 +731,8 @@ function renderPlan(){renderCashflow();renderHeatmap();renderMonthSummary();rend
   document.getElementById('trendCard').innerHTML=`<div class="trend">${rt.map(r=>`<div class="tcol"><div class="tbars"><i class="in" style="height:${Math.max(2,Math.round(r.inc/mx*100))}px"></i><i class="out" style="height:${Math.max(2,Math.round(r.out/mx*100))}px"></i></div><div class="tlab">${shortMonth(r.k)}</div></div>`).join('')}</div><div class="tlegend"><span><b style="background:var(--green)"></b>Entradas</span><span><b style="background:var(--red)"></b>Saídas</span><span>Média de saídas: ${brl(avg)}</span></div>`;
   document.getElementById('goalList').innerHTML=data.goals.map(goalHtml).join('')||`<div class="empty">Crie uma meta (viagem, reserva, moto…)<br>e acompanhe quanto já juntou.</div>`
 }
-function renderHomeExtras(){let wSub=document.getElementById('weekHomeSub');if(wSub)wSub.textContent=`Essa semana: ${brl(weekSpend(iso(weekStartDate(new Date()))).total)}`;
+function renderHomeExtras(){let pSub=document.getElementById('payHomeSub');if(pSub){let cash=cashAvailable(dashboardMonth),n=payPriorityList(dashboardMonth).length;pSub.textContent=n?`Disponível ${brl(cash.available)} · ${n} conta${n>1?'s':''} pendente${n>1?'s':''}`:`Disponível ${brl(cash.available)} · nada pendente 🎉`}
+  let wSub=document.getElementById('weekHomeSub');if(wSub)wSub.textContent=`Essa semana: ${brl(weekSpend(iso(weekStartDate(new Date()))).total)}`;
   let goalsCard=document.getElementById('goalsHomeCard'),goalsNote=document.getElementById('goalsHomeNote');if(goalsCard){if(data.goals.length){goalsCard.innerHTML=data.goals.map(goalHtml).join('');goalsNote.textContent=''}else{goalsCard.innerHTML='';goalsNote.textContent='Nenhuma meta ainda. Toque em "+ Meta" para criar (ex.: Reserva de emergência).'}}
   let recvList=receivablesForMonth(dashboardMonth),recvSec=document.getElementById('recvHomeSection'),recvCard=document.getElementById('recvHomeCard');if(recvList.length){recvSec.style.display='flex';recvCard.style.display='block';recvCard.innerHTML=recvList.map(receivableHtml).join('')}else{recvSec.style.display='none';recvCard.style.display='none'}
   let box=document.getElementById('homeCats');if(!box)return;
@@ -1122,26 +1136,36 @@ function duplicateCardItem(id){
   showToast(`"${it.desc}" duplicado nesta fatura`)
 }
 
-// ===== O que pagar primeiro (v0.44) =====
+// ===== O que pagar primeiro (v0.44, refeito na v0.47) =====
 let ppIncomeValue=0,ppMonth='';
+function cashAvailable(mk){
+  let tx=data.transactions.filter(x=>monthKey(x.date||'')===mk&&!x.ignored),sum=(a,f)=>a.reduce((t,x)=>t+Number(f(x)||0),0);
+  let received=sum(tx.filter(x=>x.type==='income'),x=>x.value);
+  let paidVar=sum(tx.filter(x=>x.type==='expense'&&!(x.dueDate&&!x.paid)),x=>x.value);
+  let paidBills=sum(data.payments.filter(p=>p.month===mk&&(p.kind==='fixed'||p.kind==='card')),p=>p.amount);
+  let paidAdv=sum(data.cardItems.filter(x=>x.advance&&!x.ignored&&monthKey(x.date||'')===mk),x=>x.value);
+  let paid=paidVar+paidBills+paidAdv;
+  return{received,paid,available:received-paid}
+}
 function payPriorityList(mk){
   let out=[];
-  data.fixed.filter(x=>x.active!==false).forEach(x=>{if(!isPaid('fixed',x.id,mk))out.push({kind:'fixed',id:x.id,label:x.desc,value:Number(x.value||0),day:Number(x.day)||1})});
-  data.cards.forEach(c=>{let total=invoiceTotalFor(c.id,mk);if(total>0.004&&!isPaid('card',c.id,mk))out.push({kind:'card',id:c.id,label:'Fatura '+c.name,value:total,day:Number(c.dueDay)||1})});
-  return out.sort((a,b)=>a.day-b.day||b.value-a.value)
+  data.fixed.filter(x=>x.active!==false).forEach(x=>{if(!isPaid('fixed',x.id,mk))out.push({kind:'fixed',id:x.id,label:x.desc,value:Number(x.value||0),due:dueDateForMonth(mk,x.day)})});
+  data.cards.forEach(c=>{let total=invoiceTotalFor(c.id,mk);if(total>0.004&&!isPaid('card',c.id,mk))out.push({kind:'card',id:c.id,label:'Fatura '+c.name,value:total,due:dueDateForMonth(mk,c.dueDay)})});
+  data.transactions.filter(x=>x.type==='expense'&&x.dueDate&&!x.paid&&!x.ignored&&monthKey(x.dueDate)<=mk).forEach(x=>out.push({kind:'tx',id:x.id,label:x.desc,value:Number(x.value||0),due:x.dueDate}));
+  return out.sort((a,b)=>a.due.localeCompare(b.due)||b.value-a.value)
 }
 function ppRowHtml(it,covered){
-  return `<div style="display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)"><div style="font-size:19px">${covered?'✅':'⏳'}</div><div style="flex:1"><div style="font-weight:700">${esc(it.label)}</div><div class="cat-sub">Vence dia ${it.day}</div></div><b>${brl(it.value)}</b><button class="idel" style="margin-left:4px" title="Marcar como pago" onclick="payPriorityMark('${it.kind}',${it.id})">✓</button></div>`
+  let late=it.due<iso(new Date());
+  return `<div style="display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)"><div style="font-size:19px">${covered?'✅':'⏳'}</div><div style="flex:1"><div style="font-weight:700">${esc(it.label)}</div><div class="cat-sub">${late?'⚠️ Venceu':'Vence'} ${fmtShort(it.due)}</div></div><b>${brl(it.value)}</b><button class="idel" style="margin-left:4px" title="Marcar como pago" onclick="payPriorityMark('${it.kind}',${it.id})">✓</button></div>`
 }
 function renderPayPriority(){
-  let list=payPriorityList(ppMonth),acc=0,rows=list.map(it=>{acc+=it.value;return ppRowHtml(it,acc<=ppIncomeValue+0.004)}).join('');
-  let leftover=ppIncomeValue-acc;
-  document.getElementById('ppInfo').innerHTML = !list.length
-    ? `Você recebeu ${brl(ppIncomeValue)}. Nenhuma conta pendente em ${monthLabel(ppMonth)} no momento.`
-    : (leftover>=-0.004
-      ? `Você recebeu ${brl(ppIncomeValue)}. Dá pra cobrir tudo que está pendente em ${monthLabel(ppMonth)}, e ainda sobra ${brl(leftover)}.`
-      : `Você recebeu ${brl(ppIncomeValue)}. Pela ordem de vencimento, essa é a prioridade — falta ${brl(-leftover)} pra cobrir tudo.`);
-  document.getElementById('ppList').innerHTML = rows || '<div class="empty">Nenhuma conta fixa ou fatura pendente.</div>'
+  let list=payPriorityList(ppMonth),cash=cashAvailable(ppMonth),avail=cash.available,acc=0;
+  let rows=list.map(it=>{acc+=it.value;return ppRowHtml(it,acc<=avail+0.004)}).join('');
+  let leftover=avail-acc;
+  let head=(ppIncomeValue>0?`Entrou ${brl(ppIncomeValue)}. `:'')+`Recebido em ${monthLabel(ppMonth)}: ${brl(cash.received)} · já pago: ${brl(cash.paid)} → <b>disponível agora: ${brl(avail)}</b>.`;
+  let tail=!list.length?'Nenhuma conta pendente. 🎉':(leftover>=-0.004?`Dá pra cobrir tudo que está pendente, e ainda sobra ${brl(leftover)}.`:`Pela ordem de vencimento, essa é a prioridade — falta ${brl(-leftover)} pra cobrir tudo.`);
+  document.getElementById('ppInfo').innerHTML=head+'<br>'+tail;
+  document.getElementById('ppList').innerHTML=rows||'<div class="empty">Nenhuma conta fixa, fatura ou conta a pagar pendente.</div>'
 }
 function showPayPriority(value,mk){
   if(payPriorityList(mk).length===0)return;
@@ -1149,7 +1173,12 @@ function showPayPriority(value,mk){
   renderPayPriority();
   document.getElementById('payPriorityOverlay').classList.add('show')
 }
-function payPriorityMark(kind,id){togglePaid(kind,id,ppMonth);renderPayPriority()}
+function openPayPriority(){ppIncomeValue=0;ppMonth=dashboardMonth;renderPayPriority();document.getElementById('payPriorityOverlay').classList.add('show')}
+function payPriorityMark(kind,id){
+  if(kind==='tx'){let tx=data.transactions.find(x=>x.id===id);if(tx){tx.paid=true;tx.paidAt=iso(new Date());save();showToast('Marcado como pago')}}
+  else togglePaid(kind,id,ppMonth);
+  renderPayPriority()
+}
 
 // ===== Guardar sobra numa meta (v0.45) =====
 function openSaveBalance(){
