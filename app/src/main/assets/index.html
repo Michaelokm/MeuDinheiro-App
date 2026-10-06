@@ -233,7 +233,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.51 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 0.53 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -466,6 +466,15 @@
   <button class="ghost" onclick="closeSheets()">Fechar</button>
 </div></div>
 
+<div class="overlay" id="payAmountOverlay" onclick="if(event.target===this)closePayAmount()"><div class="sheet">
+  <div class="handle"></div><h3>Valor realmente pago</h3>
+  <p class="mini-note" id="paInfo" style="margin-top:0"></p>
+  <div class="money-input"><span>R$</span><input id="paValue" inputmode="decimal" placeholder="0,00" oninput="updatePaHint()" /></div>
+  <p class="mini-note" id="paHint" style="font-weight:700;margin:6px 0 0"></p>
+  <button class="save" onclick="savePaymentAmount()">Salvar</button>
+  <button class="ghost" onclick="closePayAmount()">Cancelar</button>
+</div></div>
+
 <div class="overlay" id="goalPickerOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
   <div class="handle"></div><h3>Guardar em qual meta?</h3>
   <p class="mini-note" style="margin-top:0" id="gpInfo"></p>
@@ -640,8 +649,6 @@ function copyPreviousInvoice(){
       date:`${currentInvoiceMonth}-${String(day).padStart(2,'0')}`
     })
   });
-  dashboardMonth=currentInvoiceMonth;
-  localStorage.setItem('md_dashboard_month',dashboardMonth);
   save();
   showToast(`Fatura de ${monthLabel(previous)} copiada para ${monthLabel(currentInvoiceMonth)}`)
 }
@@ -683,7 +690,7 @@ function saveInvoiceBase(){
   if(ibMode==='total'&&value<-0.004)return showToast(`Os gastos lançados (${brl(n.items)}) já passam desse total`);
   value=Math.max(0,value);
   let x=data.cardInvoices.find(i=>i.cardId===c.id&&i.month===currentInvoiceMonth);if(x)x.baseValue=value;else data.cardInvoices.push({id:Date.now(),cardId:c.id,month:currentInvoiceMonth,baseValue:value});
-  dashboardMonth=currentInvoiceMonth;localStorage.setItem('md_dashboard_month',dashboardMonth);save();closeSheets();
+  save();closeSheets();
   showToast(ibMode==='total'?`Total da fatura agora é ${brl(invoiceTotalFor(c.id,currentInvoiceMonth))}`:'Valor da fatura atualizado')
 }
 function openCardItem(){let c=selectedCard();if(!c)return showToast('Cadastre um cartão primeiro');editingCardItemId=null;document.getElementById('ciTitle').textContent='Acrescentar gasto na fatura';document.getElementById('ciDeleteBtn').style.display='none';document.getElementById('ciMoveBtn').style.display='none';document.getElementById('ciEditNote').style.display='none';cats('expense',document.getElementById('ciCategory'));document.getElementById('ciCategory').value='Outros';setCiMore(false);setCiKind('expense');ciIgnored=false;document.getElementById('ciIgnoreSwitch').classList.remove('on');document.getElementById('ciValue').value='';document.getElementById('ciDesc').value='';document.getElementById('ciDate').value=iso(new Date());document.getElementById('ciInstallments').value=1;setCiInstMode('total');updateCiInstModeUI();document.getElementById('cardItemOverlay').classList.add('show')}
@@ -707,7 +714,6 @@ function setCiMore(open){document.getElementById('ciMoreBox').style.display=open
 function toggleCiMore(){setCiMore(true)}
 function saveCardItem(){let c=selectedCard();if(!c)return;let value=parseMoney(document.getElementById('ciValue').value),desc=document.getElementById('ciDesc').value.trim();if(!value||!desc)return showToast('Preencha valor e descrição');let category=document.getElementById('ciCategory').value||'Outros',date=document.getElementById('ciDate').value||iso(new Date()),n=Math.round(Number(document.getElementById('ciInstallments').value)||1);n=Math.min(48,Math.max(1,n));
   if(editingCardItemId!==null){let it=data.cardItems.find(x=>x.id===editingCardItemId);editingCardItemId=null;if(!it)return showToast('Gasto não encontrado');let changedCat=it.category!==category;it.value=value;it.desc=desc;it.category=category;it.date=date;it.refund=ciKind==='refund';it.advance=false;it.ignored=ciIgnored;let auto=invoiceMonthForDate(c,date),movedMsg='';if(auto&&auto!==it.month){it.month=auto;currentInvoiceMonth=auto;movedMsg=` · foi para a fatura de ${monthLabel(auto)}`}if(it.group&&changedCat)data.cardItems.forEach(x=>{if(x.group===it.group)x.category=category});save();closeSheets();showToast((it.group&&changedCat?'Categoria aplicada a todas as parcelas':(it.refund?'Estorno atualizado':'Gasto atualizado'))+movedMsg);return}
-  dashboardMonth=currentInvoiceMonth;localStorage.setItem('md_dashboard_month',dashboardMonth);
   let targetMonth=invoiceMonthForDate(c,date)||currentInvoiceMonth,paidFrom=null;
   for(let k=0;k<24;k++){let pr=paymentRecord('card',c.id,targetMonth);if(pr&&date>=(pr.paidAt||iso(new Date()))){if(!paidFrom)paidFrom=targetMonth;targetMonth=monthPlus(targetMonth,1)}else break}
   let movedNote=paidFrom?` · a fatura de ${monthLabel(paidFrom)} já está paga, então foi para a de ${monthLabel(targetMonth)}`:(targetMonth!==currentInvoiceMonth?` · foi para a fatura de ${monthLabel(targetMonth)}${c.closingDay?` (fecha dia ${c.closingDay})`:''}`:'');
@@ -1200,8 +1206,8 @@ function payFlows(mk){
   let incomes=tx.filter(x=>x.type==='income').map(x=>({label:x.desc,date:x.date,value:num(x.value)})).sort(byDate);
   let bills=[];
   data.payments.filter(p=>p.month===mk).forEach(p=>{
-    if(p.kind==='fixed'){let f=data.fixed.find(x=>x.id===p.itemId);if(f)bills.push({icon:'🔁',label:f.desc,tag:'Conta fixa',date:p.paidAt||mk+'-01',value:num(p.amount),undo:`payPriorityUndo('fixed',${p.itemId})`})}
-    else if(p.kind==='card'){let c=data.cards.find(x=>x.id===p.itemId);if(c)bills.push({icon:'💳',label:'Fatura '+c.name,tag:'Fatura do cartão',date:p.paidAt||mk+'-01',value:num(p.amount),undo:`payPriorityUndo('card',${p.itemId})`})}
+    if(p.kind==='fixed'){let f=data.fixed.find(x=>x.id===p.itemId);if(f)bills.push({icon:'🔁',label:f.desc,tag:'Conta fixa',date:p.paidAt||mk+'-01',value:num(p.amount),edit:`editPaymentAmount(${p.id})`,undo:`payPriorityUndo('fixed',${p.itemId})`})}
+    else if(p.kind==='card'){let c=data.cards.find(x=>x.id===p.itemId);if(c)bills.push({icon:'💳',label:'Fatura '+c.name,tag:'Fatura do cartão',date:p.paidAt||mk+'-01',value:num(p.amount),edit:`editPaymentAmount(${p.id})`,undo:`payPriorityUndo('card',${p.itemId})`})}
   });
   tx.filter(x=>x.type==='expense'&&x.dueDate&&x.paid).forEach(x=>bills.push({icon:'🧾',label:x.desc,tag:'Conta a pagar',date:x.paidAt||x.dueDate,value:num(x.value),undo:`payPriorityUndo('tx',${x.id})`}));
   bills.sort(byDate);
@@ -1219,25 +1225,51 @@ function payPriorityList(mk){
   data.transactions.filter(x=>x.type==='expense'&&x.dueDate&&!x.paid&&!x.ignored&&monthKey(x.dueDate)<=mk).forEach(x=>out.push({kind:'tx',id:x.id,label:x.desc,value:Number(x.value||0),due:x.dueDate}));
   return out.sort((a,b)=>a.due.localeCompare(b.due)||b.value-a.value)
 }
-function ppRowHtml(it,covered,acc){
-  let late=it.due<iso(new Date());
-  return `<div style="display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)"><div style="font-size:19px">${covered?'✅':'⏳'}</div><div style="flex:1"><div style="font-weight:700">${esc(it.label)}</div><div class="cat-sub">${late?'⚠️ Venceu':'Vence'} ${fmtShort(it.due)} · soma até aqui ${brl(acc)}</div></div><b>${brl(it.value)}</b><button class="idel" style="margin-left:4px" title="Marcar como pago" onclick="payPriorityMark('${it.kind}',${it.id})">✓</button></div>`
+function ppRowHtml(it,covered,acc,avail){
+  let late=it.due<iso(new Date()),after=avail-acc,depois=after>=-0.004?`depois sobra ${brl(Math.max(0,after))}`:`depois faltam ${brl(-after)}`;
+  return `<div style="display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)"><div style="font-size:19px">${covered?'✅':'⏳'}</div><div style="flex:1"><div style="font-weight:700">${esc(it.label)}</div><div class="cat-sub">${late?'⚠️ Venceu':'Vence'} ${fmtShort(it.due)} · ${depois}</div></div><b>${brl(it.value)}</b><button class="idel" style="margin-left:4px" title="Marcar como pago" onclick="payPriorityMark('${it.kind}',${it.id})">✓</button></div>`
 }
 function renderPayPriority(){
   let list=payPriorityList(ppMonth),f=payFlows(ppMonth),avail=f.available,acc=0,totalPend=list.reduce((a,x)=>a+x.value,0),leftover=avail-totalPend;
-  let rows=list.map(it=>{acc+=it.value;return ppRowHtml(it,acc<=avail+0.004,acc)}).join('');
+  let rows=list.map(it=>{acc+=it.value;return ppRowHtml(it,acc<=avail+0.004,acc,avail)}).join('');
   let just=document.getElementById('ppJust');just.style.display=ppIncomeValue>0?'block':'none';just.textContent=ppIncomeValue>0?`Entrou ${brl(ppIncomeValue)} agora.`:'';
   let pct=v=>f.received>0.004?Math.max(0,Math.min(100,v/f.received*100)):0;
-  document.getElementById('ppSummary').innerHTML=`<div class="pp-tiles"><div class="pp-tile"><small>💰 Recebido no mês</small><b id="ppRecv">${brl(f.received)}</b></div><div class="pp-tile"><small>✅ Contas já pagas</small><b id="ppPaidBills" style="color:var(--green)">${brl(f.paidBills)}</b></div><div class="pp-tile"><small>🛒 Gastos do dia a dia</small><b id="ppDaily" style="color:var(--amber)">${brl(f.paidDaily)}</b></div><div class="pp-tile hl"><small>💵 Disponível agora</small><b id="ppAvail">${brl(avail)}</b></div></div><div class="pp-bar"><i style="width:${pct(f.paidBills)}%;background:var(--green)"></i><i style="width:${pct(f.paidDaily)}%;background:var(--amber)"></i></div><div class="mini-note" style="margin:0 0 2px">Disponível = recebido − contas pagas − gastos do dia a dia. Confira os itens de cada parte lá embaixo.</div>`;
+  document.getElementById('ppSummary').innerHTML=`<div class="pp-tiles"><div class="pp-tile"><small>💰 Recebido no mês</small><b id="ppRecv">${brl(f.received)}</b></div><div class="pp-tile"><small>✅ Contas já pagas</small><b id="ppPaidBills" style="color:var(--green)">${brl(f.paidBills)}</b></div><div class="pp-tile"><small>🛒 Gastos do dia a dia</small><b id="ppDaily" style="color:var(--amber)">${brl(f.paidDaily)}</b></div><div class="pp-tile hl"><small>💵 Disponível agora</small><b id="ppAvail">${brl(avail)}</b></div></div><div class="pp-bar"><i style="width:${pct(f.paidBills)}%;background:var(--green)"></i><i style="width:${pct(f.paidDaily)}%;background:var(--amber)"></i></div><div class="mini-note" style="margin:0 0 2px">Disponível = recebido − contas pagas − gastos do dia a dia. Uma conta pendente só sai do disponível quando você toca ✓ (paga); na lista, cada linha mostra quanto sobra depois dela.</div>`;
   document.getElementById('ppPendTotal').textContent=list.length?`${brl(totalPend)} · ${list.length}`:'';
   document.getElementById('ppInfo').textContent=!list.length?'Nenhuma conta pendente. 🎉':(leftover>=-0.004?`Em ordem de vencimento. Com o disponível dá pra cobrir tudo que está pendente, e ainda sobra ${brl(leftover)}.`:`Em ordem de vencimento. Com o disponível dá pra pagar o que está marcado ✅. Falta ${brl(-leftover)} pra cobrir tudo.`);
   document.getElementById('ppList').innerHTML=rows||'<div class="empty">Nenhuma conta fixa, fatura ou conta a pagar pendente.</div>';
   const grp=(k,title,total,items,fmt)=>`<div class="pp-grp" onclick="togglePpGroup('${k}')"><span>${ppOpen[k]?'▾':'▸'} ${title}</span><span>${brl(total)} · ${items.length}</span></div>`+(ppOpen[k]?(items.length?items.map(fmt).join(''):'<div class="empty">Nada por aqui.</div>'):'');
-  let paid=`<div class="pp-sec"><span>✅ Já paguei</span><span id="ppPaidTotal">${brl(f.paidBills)} · ${f.bills.length}</span></div>`+(f.bills.length?f.bills.map(b=>`<div class="pp-paidrow"><div style="font-size:18px">${b.icon}</div><div style="flex:1"><div style="font-weight:700">${esc(b.label)}</div><div class="cat-sub">${b.tag} · ${fmtShort(b.date)}</div></div><b style="color:var(--green)">${brl(b.value)}</b>${b.undo?`<button class="idel" style="margin-left:4px" title="Desfazer (volta pra pendente)" onclick="${b.undo}">↩</button>`:''}</div>`).join(''):'<div class="empty">Nenhuma conta marcada como paga neste mês ainda.</div>');
+  let paid=`<div class="pp-sec"><span>✅ Já paguei</span><span id="ppPaidTotal">${brl(f.paidBills)} · ${f.bills.length}</span></div>`+(f.bills.length?f.bills.map(b=>`<div class="pp-paidrow"><div style="font-size:18px">${b.icon}</div><div style="flex:1"><div style="font-weight:700">${esc(b.label)}</div><div class="cat-sub">${b.tag} · ${fmtShort(b.date)}</div></div><b style="color:var(--green)">${brl(b.value)}</b>${b.edit?`<button class="idel" style="margin-left:4px" title="Corrigir o valor pago" onclick="${b.edit}">✏️</button>`:''}${b.undo?`<button class="idel" style="margin-left:4px" title="Desfazer (volta pra pendente)" onclick="${b.undo}">↩</button>`:''}</div>`).join(''):'<div class="empty">Nenhuma conta marcada como paga neste mês ainda.</div>');
   paid+=grp('daily','🛒 Gastos do dia a dia',f.paidDaily,f.daily,d=>`<div class="pp-paidrow"><div style="flex:1"><div style="font-weight:700">${esc(d.label)}</div><div class="cat-sub">${esc(d.sub)} · ${fmtShort(d.date)}</div></div><b style="color:var(--amber)">${brl(d.value)}</b></div>`);
   paid+=grp('inc','💰 Entradas do mês',f.received,f.incomes,d=>`<div class="pp-paidrow"><div style="flex:1"><div style="font-weight:700">${esc(d.label)}</div><div class="cat-sub">${fmtShort(d.date)}</div></div><b style="color:var(--green)">${brl(d.value)}</b></div>`);
   if(f.credit>0.004)paid+=`<div class="mini-note" style="margin-top:8px">💳 Você também lançou ${brl(f.credit)} em compras no crédito. Elas não foram descontadas do disponível: só saem do bolso quando a fatura for paga.</div>`;
   document.getElementById('ppPaidBox').innerHTML=paid
+}
+let editingPaymentId=null;
+function paymentRef(p){
+  if(p.kind==='fixed'){let f=data.fixed.find(x=>x.id===p.itemId);return{name:f?f.desc:'Conta fixa',ref:f?Number(f.value||0):0,what:'a conta'}}
+  let c=data.cards.find(x=>x.id===p.itemId);return{name:'Fatura '+(c?c.name:''),ref:c?invoiceTotalFor(c.id,p.month):0,what:'a fatura'}
+}
+function editPaymentAmount(id){
+  let p=data.payments.find(x=>x.id===id);if(!p)return;
+  editingPaymentId=id;let r=paymentRef(p);
+  document.getElementById('paInfo').textContent=`${r.name} · ${monthLabel(p.month)}. Digite o valor que saiu de fato da sua conta (como aparece no extrato do banco).`;
+  document.getElementById('paValue').value=Number(p.amount||0).toFixed(2).replace('.',',');
+  updatePaHint();
+  document.getElementById('payAmountOverlay').classList.add('show');
+  setTimeout(()=>{let i=document.getElementById('paValue');i.focus();i.select()},60)
+}
+function updatePaHint(){
+  let p=data.payments.find(x=>x.id===editingPaymentId);if(!p)return;
+  let r=paymentRef(p),v=parseMoney(document.getElementById('paValue').value),d=Math.round((v-r.ref)*100)/100,el=document.getElementById('paHint');
+  el.textContent=Math.abs(d)<0.005?`Igual ao valor de ${r.what} no app (${brl(r.ref)}).`:`No app ${r.what} está em ${brl(r.ref)}. Diferença de ${brl(Math.abs(d))} ${d>0?'a mais':'a menos'}.`
+}
+function closePayAmount(){editingPaymentId=null;document.getElementById('payAmountOverlay').classList.remove('show')}
+function savePaymentAmount(){
+  let p=data.payments.find(x=>x.id===editingPaymentId);if(!p)return closePayAmount();
+  let v=Math.round(parseMoney(document.getElementById('paValue').value)*100)/100;
+  if(!(v>0))return showToast('Informe o valor pago');
+  p.amount=v;save();closePayAmount();renderPayPriority();showToast('Valor pago atualizado')
 }
 function togglePpGroup(k){ppOpen[k]=!ppOpen[k];renderPayPriority()}
 function showPayPriority(value,mk){
