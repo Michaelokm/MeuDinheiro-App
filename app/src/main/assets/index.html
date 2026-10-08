@@ -231,6 +231,24 @@
     #challengesBody .bar i{background:var(--amber)}
     .lock-inner h3{font-family:var(--display);font-weight:600;font-size:27px}
     .sortrow{flex-wrap:wrap}.sortrow .pill{flex:1 1 auto;min-width:0;font-size:13px;padding:8px 10px;text-align:center}
+
+    /* comprovante */
+    .grid4{grid-template-columns:repeat(5,1fr);gap:2px}.quick small{font-size:11.5px;white-space:nowrap}.quick .ico{width:54px;height:54px}
+    .rc-attach{margin:-2px 0 12px;padding:11px;font-size:14px;color:var(--brand2);border-color:rgba(70,218,203,.35)}
+    .rc-busy{background:#121F1D;border:1px solid var(--line);border-radius:22px;padding:26px 28px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;max-width:290px}
+    .rc-busy span{font-size:12px;color:var(--muted)}
+    .rc-spin{width:38px;height:38px;border-radius:50%;border:3px solid rgba(70,218,203,.22);border-top-color:var(--brand2);animation:rcspin .9s linear infinite}
+    @keyframes rcspin{to{transform:rotate(360deg)}}
+    .rc-ticket{position:relative;border:1px dashed rgba(233,185,73,.5);border-radius:18px;padding:16px 14px 14px;text-align:center;background:linear-gradient(180deg,rgba(233,185,73,.07),rgba(233,185,73,0))}
+    .rc-ticket small{color:#CDBB86;font-size:12px}
+    .rc-ticket .rc-val{font-family:var(--display);font-weight:600;font-size:40px;letter-spacing:-.4px;margin:4px 0 6px;font-variant-numeric:tabular-nums lining-nums}
+    .rc-ticket .rc-val.in{color:var(--green)}.rc-ticket .rc-val.out{color:var(--text)}
+    .rc-ticket .rc-who{font-weight:650;font-size:15px}.rc-ticket .rc-meta{font-size:12px;color:var(--muted);margin-top:4px}
+    .rc-warn{margin:10px 0 0;padding:10px 12px;border-radius:14px;background:rgba(233,185,73,.10);border:1px solid rgba(233,185,73,.32);color:#EED39A;font-size:12.5px;line-height:1.4}
+    .rc-sec{font-weight:700;font-size:13px;margin:16px 2px 6px;color:#C9D9D5}
+    .rc-match{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 14px;margin-top:8px;border-radius:15px;border:1px solid rgba(90,216,164,.45);background:rgba(90,216,164,.08);color:var(--text)}
+    .rc-match .rc-mi{font-size:18px;color:var(--green)}.rc-match .rc-mt{flex:1;min-width:0}.rc-match b{display:block;font-size:14px;color:#EDF5F3}.rc-match span{font-size:12px;color:var(--muted)}
+    .rc-raw{white-space:pre-wrap;font-size:11.5px;line-height:1.45;background:#0E1918;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px;max-height:200px;overflow:auto;color:#B9CCC8;user-select:text;-webkit-user-select:text}
     @media (max-width:360px){.balance{font-size:38px}.quick .ico{width:52px;height:52px}}
     @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
   </style>
@@ -264,6 +282,7 @@
       <button class="quick" onclick="openMoves('income')"><span class="ico">💰</span><small>Receitas</small></button>
       <button class="quick" onclick="go('fixed')"><span class="ico">🔁</span><small>Fixas</small></button>
       <button class="quick" onclick="openVoice()"><span class="ico">🎙️</span><small>Por voz</small></button>
+      <button class="quick" id="rcQuick" onclick="pickReceipt()"><span class="ico">🧾</span><small>Comprovante</small></button>
     </div>
     <div class="explore">
     <button class="recv-banner" onclick="openHeatmapDirect()"><span class="rb-ic">🔥</span><span class="rb-txt"><span class="rb-title">Mapa de calor</span><div class="rb-sub">Veja seus gastos dia a dia</div></span><span class="rb-chev">›</span></button>
@@ -382,7 +401,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 1.0 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 1.1 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -399,6 +418,7 @@
 <div class="overlay" id="addOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
   <div class="handle"></div><h3 id="transactionTitle">Novo lançamento</h3>
   <div class="type"><button id="typeExpense" class="active" onclick="setType('expense')">Saída</button><button id="typeIncome" onclick="setType('income')">Entrada</button></div>
+  <button class="ghost rc-attach" id="rcAttachBtn" onclick="pickReceipt()">🧾 Preencher com um comprovante</button>
   <div class="money-input"><span>R$</span><input id="value" inputmode="decimal" placeholder="0,00" /></div>
   <div class="field"><label>Descrição</label><input id="desc" placeholder="Ex.: Supermercado" onblur="suggestCategoryFromDesc()" /></div>
   <div class="field"><label>Tags (opcional)</label><input id="txTags" placeholder="Ex.: viagem, reembolso" /></div>
@@ -640,6 +660,13 @@
   <button class="ghost" onclick="closeSheets()">Cancelar</button>
 </div></div>
 
+<div class="overlay" id="receiptOverlay" onclick="if(event.target===this)closeSheets()"><div class="sheet">
+  <div class="handle"></div><h3 id="rcTitle">Comprovante lido</h3>
+  <div id="rcBody"></div>
+</div></div>
+
+<div class="overlay" id="receiptBusy" onclick="closeSheets()" style="align-items:center"><div class="rc-busy"><div class="rc-spin"></div><b>Lendo o comprovante…</b><span>Isso acontece no seu celular, sem internet.</span></div></div>
+
 <div class="toast" id="toast"></div>
 <script>
 const CATS_EXP=['Alimentação','Moradia','Transporte','Carro','Moto','Pensão','Seguros','Saúde','Educação','Lazer','Compras','Contas','Outros'];
@@ -667,8 +694,8 @@ function updatePayLaterUI(){
   document.getElementById('dueDateField').style.display=(show&&txPayLater)?'block':'none'
 }
 function toggleRecurring(){recurring=!recurring;document.getElementById('recurringSwitch').classList.toggle('on',recurring);updatePayLaterUI()}
-function openAdd(t='expense'){editingTransactionId=null;currentType=t;recurring=false;setType(t);document.getElementById('transactionTitle').textContent='Novo lançamento';document.getElementById('transactionSaveButton').textContent='Salvar lançamento';document.getElementById('transactionDeleteButton').style.display='none';document.getElementById('recurringRow').style.display=t==='expense'?'flex':'none';document.getElementById('recurringSwitch').classList.remove('on');txIgnored=false;document.getElementById('ignoreSwitch').classList.remove('on');txPayLater=false;document.getElementById('payLaterSwitch').classList.remove('on');document.getElementById('txDueDate').value='';updatePayLaterUI();categoryManuallySet=false;document.getElementById('value').value='';document.getElementById('desc').value='';document.getElementById('txTags').value='';document.getElementById('date').value=iso(new Date());document.getElementById('account').value='Pix';document.getElementById('addOverlay').classList.add('show')}
-function openEditTransaction(id){let tx=data.transactions.find(x=>x.id===id);if(!tx)return;editingTransactionId=id;currentType=tx.type||'expense';recurring=false;setType(currentType);document.getElementById('transactionTitle').textContent='Editar lançamento';document.getElementById('transactionSaveButton').textContent='Salvar alterações';document.getElementById('transactionDeleteButton').style.display='block';document.getElementById('recurringRow').style.display='none';document.getElementById('value').value=Number(tx.value||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('desc').value=tx.desc||'';document.getElementById('date').value=tx.date||iso(new Date());document.getElementById('category').value=tx.category||document.getElementById('category').value;document.getElementById('txTags').value=(tx.tags||[]).join(', ');txIgnored=!!tx.ignored;document.getElementById('ignoreSwitch').classList.toggle('on',txIgnored);txPayLater=!!(tx.dueDate&&!tx.paid);document.getElementById('payLaterSwitch').classList.toggle('on',txPayLater);document.getElementById('txDueDate').value=tx.dueDate||'';updatePayLaterUI();categoryManuallySet=true;let account=document.getElementById('account');if(tx.account&&!Array.from(account.options).some(o=>o.value===tx.account)){let opt=document.createElement('option');opt.value=tx.account;opt.textContent=tx.account;account.appendChild(opt)}account.value=tx.account||'Pix';document.getElementById('addOverlay').classList.add('show')}
+function openAdd(t='expense'){editingTransactionId=null;currentType=t;recurring=false;setType(t);document.getElementById('transactionTitle').textContent='Novo lançamento';document.getElementById('transactionSaveButton').textContent='Salvar lançamento';document.getElementById('transactionDeleteButton').style.display='none';document.getElementById('recurringRow').style.display=t==='expense'?'flex':'none';document.getElementById('recurringSwitch').classList.remove('on');txIgnored=false;document.getElementById('ignoreSwitch').classList.remove('on');txPayLater=false;document.getElementById('payLaterSwitch').classList.remove('on');document.getElementById('txDueDate').value='';updatePayLaterUI();categoryManuallySet=false;document.getElementById('value').value='';document.getElementById('desc').value='';document.getElementById('txTags').value='';document.getElementById('date').value=iso(new Date());document.getElementById('account').value='Pix';document.getElementById('rcAttachBtn').style.display='block';document.getElementById('addOverlay').classList.add('show')}
+function openEditTransaction(id){let tx=data.transactions.find(x=>x.id===id);if(!tx)return;editingTransactionId=id;document.getElementById('rcAttachBtn').style.display='none';currentType=tx.type||'expense';recurring=false;setType(currentType);document.getElementById('transactionTitle').textContent='Editar lançamento';document.getElementById('transactionSaveButton').textContent='Salvar alterações';document.getElementById('transactionDeleteButton').style.display='block';document.getElementById('recurringRow').style.display='none';document.getElementById('value').value=Number(tx.value||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('desc').value=tx.desc||'';document.getElementById('date').value=tx.date||iso(new Date());document.getElementById('category').value=tx.category||document.getElementById('category').value;document.getElementById('txTags').value=(tx.tags||[]).join(', ');txIgnored=!!tx.ignored;document.getElementById('ignoreSwitch').classList.toggle('on',txIgnored);txPayLater=!!(tx.dueDate&&!tx.paid);document.getElementById('payLaterSwitch').classList.toggle('on',txPayLater);document.getElementById('txDueDate').value=tx.dueDate||'';updatePayLaterUI();categoryManuallySet=true;let account=document.getElementById('account');if(tx.account&&!Array.from(account.options).some(o=>o.value===tx.account)){let opt=document.createElement('option');opt.value=tx.account;opt.textContent=tx.account;account.appendChild(opt)}account.value=tx.account||'Pix';document.getElementById('addOverlay').classList.add('show')}
 let txPayLater=false,editingFixedId=null,editingCardItemId=null,ciKind='expense',txIgnored=false,ciIgnored=false,categoryManuallySet=false,ceColorVal='',ciInstMode='total';
 function openFixed(id){editingFixedId=id||null;let f=id?data.fixed.find(x=>x.id===id):null;cats('expense',document.getElementById('fCategory'));document.getElementById('fTitle').textContent=f?'Editar conta fixa':'Nova conta fixa';document.getElementById('fValue').value=f?Number(f.value||0).toFixed(2).replace('.',','):'';document.getElementById('fDesc').value=f?f.desc:'';document.getElementById('fDay').value=f?f.day:'';if(f){let sel=document.getElementById('fCategory');sel.value=f.category;sel.dataset.prev=sel.value}document.getElementById('fixedOverlay').classList.add('show')}
 function closeSheets(){document.querySelectorAll('.overlay').forEach(x=>x.classList.remove('show'))}
@@ -1509,6 +1536,187 @@ function moveEditingCardItemNext(){
 }
 function cardSkin(name){let n=(name||'').toLowerCase();const m=[[/nu ?bank|roxinho/,['#7B3CC8','#4A1C88']],[/\binter\b/,['#F07A1E','#B8500C']],[/ita[uú]|samsung|personnalit/,['#1E3F7A','#0E2350']],[/mercado ?pago|mercado ?livre/,['#1E8DDC','#0B5BA2']],[/\bc6\b/,['#3B3B3E','#151517']],[/carrefour|atacad/,['#2556B5','#15306F']],[/bradesco|next\b/,['#C8143A','#840A22']],[/santander/,['#DE2A1E','#9A120C']],[/caixa/,['#1F62B3','#0F3B76']],[/banco do brasil|\bbb\b|ourocard/,['#2C54A6','#19336B']],[/picpay/,['#1FB45A','#0E7438']],[/neon/,['#16AEDB','#0B7096']],[/\bpan\b/,['#1A9ED8','#0D6895']],[/xp\b|btg/,['#2E2E2E','#121212']]];for(const [re,c] of m)if(re.test(n))return c;return['#1F5049','#102E2B']}
 function applyCardSkin(c){let el=document.querySelector('.credit-hero');if(!el)return;let k=cardSkin(c&&c.name);el.style.setProperty('--cc1',k[0]);el.style.setProperty('--cc2',k[1])}
+// ===== Ler comprovante (v1.1): texto -> valor, data, quem e tipo =====
+function rcNorm(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()}
+function rcLines(text){return String(text||'').replace(/\u00a0/g,' ').split(/\r?\n/).map(l=>l.replace(/[ \t]+/g,' ').trim()).filter(Boolean)}
+function rcToNumber(intPart,dec){let n=Number(String(intPart).replace(/[. ]/g,'')+(dec!==undefined&&dec!==''?'.'+(dec.length===1?dec+'0':dec):''));return isFinite(n)?Math.round(n*100)/100:NaN}
+function rcMoney(lines){
+  let out=[];
+  lines.forEach((ln,i)=>{
+    let seen=false,re=/(?:^|[^A-Za-z0-9])R\s?[$S5]\s*(-?)\s*(\d{1,3}(?:[. ]\d{3})+|\d+)(?:[,.](\d{1,2}))?(?!\d)/g,m;
+    while((m=re.exec(ln))){let v=rcToNumber(m[2],m[3]);if(v>0){out.push({v,i,prefix:true});seen=true}}
+    if(!seen){
+      let re2=/(?<![\d.,])(\d{1,3}(?:\.\d{3})+|\d+),(\d{2})(?![\d,])/g;
+      while((m=re2.exec(ln))){let v=rcToNumber(m[1],m[2]);if(v>0)out.push({v,i,prefix:false})}
+    }
+  });
+  return out
+}
+function rcPickValue(lines){
+  let c=rcMoney(lines);if(!c.length)return{value:0,strong:false};
+  const strong=/valor (pago|total|da transacao|do pix|do pagamento|cobrado|final|debitado|transferido|da transferencia|efetivo|liquido|da compra)|total (pago|a pagar|debitado|da transacao)|pagamento efetuado|voce (pagou|transferiu|enviou|recebeu)/,
+        medium=/\bvalor\b|\btotal\b|quantia/,doc=/valor (do documento|nominal|original|do titulo)/,
+        neg=/tarifa|juros|multa|desconto|abatimento|encargos|\biof\b|saldo|limite|\btaxa\b|acrescimo|\bmora\b|\bcet\b|parcela|comissao|cashback|bonus|troco/;
+  let best=null;
+  c.forEach(x=>{
+    let same=rcNorm(lines[x.i]),prev=x.i>0?rcNorm(lines[x.i-1]):'',s=x.prefix?1:0;
+    let prevHasMoney=c.some(y=>y.i===x.i-1);
+    if(strong.test(same))s+=6;else if(doc.test(same))s+=1;else if(medium.test(same))s+=3;
+    if(!prevHasMoney){if(strong.test(prev))s+=5;else if(doc.test(prev))s+=1;else if(medium.test(prev))s+=3}
+    if(neg.test(same))s-=6;if(!prevHasMoney&&neg.test(prev))s-=5;
+    s-=x.i*0.01;
+    x.score=s;if(!best||s>best.score)best=x
+  });
+  return{value:best.v,strong:best.score>=3}
+}
+const RC_MONTHS={jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
+function rcValidDate(d,m,y){y=Number(y);if(y<100)y+=2000;d=Number(d);m=Number(m);if(!(y>=2000&&y<=2100&&m>=1&&m<=12&&d>=1&&d<=31))return null;let dt=new Date(y,m-1,d);if(dt.getMonth()!==m-1)return null;return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
+function rcPickDate(lines,today){
+  let c=[];
+  lines.forEach((ln,i)=>{
+    let n=rcNorm(ln),m;
+    let re=/(?<!\d)(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{4}|\d{2})(?!\d)/g;
+    while((m=re.exec(n))){let d=rcValidDate(m[1],m[2],m[3]);if(d)c.push({d,i})}
+    let re2=/(?<!\d)(\d{1,2})\s*(?:de\s+)?(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-z]*\.?\s*(?:de\s+)?(\d{4})(?!\d)/g;
+    while((m=re2.exec(n))){let d=rcValidDate(m[1],RC_MONTHS[m[2]],m[3]);if(d)c.push({d,i})}
+  });
+  if(!c.length)return today;
+  const good=/data (da transacao|do pagamento|de pagamento|da operacao|de efetivacao|e hora|da transferencia|do pix)|efetuad|realizad|pago em|debitado|pagamento em|transferencia|^data\b/,
+        bad=/vencimento|venc\b|nascimento|validade|competencia|emissao|agendad/;
+  let best=null;
+  c.forEach(x=>{
+    let same=rcNorm(lines[x.i]),prev=x.i>0?rcNorm(lines[x.i-1]):'',s=0;
+    if(good.test(same))s+=4;else if(good.test(prev))s+=3;
+    if(bad.test(same))s-=6;else if(bad.test(prev))s-=5;
+    s-=x.i*0.01;x.score=s;if(!best||s>best.score)best=x
+  });
+  return best.d
+}
+const RC_STOP=/^(cpf|cnpj|instituicao|banco|agencia|conta|chave|tipo|valor|data|id|autenticacao|protocolo|nome|documento|numero|codigo|identificador|descricao|mensagem|situacao|status|origem|destino|dados)\b/;
+function rcCleanName(s){
+  s=String(s||'').replace(/\s*(cpf|cnpj)\b.*$/i,'').replace(/[\u2022*]{2,}.*$/,'').replace(/^[:\-\s]+|[:\-\s]+$/g,'').replace(/\s+/g,' ').trim();
+  if(!s||s.length<3||s.length>48||/[,;!?]/.test(s)||s.split(' ').length>7||/\d{5,}/.test(s))return'';
+  if(RC_STOP.test(rcNorm(s))&&s.split(' ').length<=2)return'';
+  return s
+}
+function rcTitle(s){
+  const small=new Set(['de','da','do','das','dos','e','em','na','no']),keep=new Set(['ltda','s/a','sa','me','epp','mei','cia']);
+  return s.toLowerCase().split(' ').map((w,i)=>{if(/^s[.\/]a\.?$/.test(w))return w.toUpperCase();if(i>0&&small.has(w))return w;if(keep.has(w)){return w==='ltda'?'Ltda':w.toUpperCase()}return w.charAt(0).toUpperCase()+w.slice(1)}).join(' ')
+}
+function rcWho(lines,dir){
+  const sec=dir==='in'?/(dados de quem pagou|quem pagou|pagador|remetente|origem|quem enviou|enviado por)/:/(dados de quem recebeu|quem recebeu|recebedor|favorecido|destino|beneficiario|destinatario|para quem|pago a)/;
+  const lab=dir==='in'?/^(nome do pagador|nome de quem pagou|pagador|remetente|origem|enviado por|quem pagou)\b[:\-]?\s*(.*)$/:/^(nome do recebedor|nome do favorecido|nome do beneficiario|razao social do recebedor|favorecido|recebedor|beneficiario|destinatario|nome do destino|quem recebeu|para|destino|estabelecimento|cedente|loja|pago a|pagamento para)\b[:\-]?\s*(.*)$/;
+  let n=lines.map(rcNorm),res='';
+  const nextValue=(i)=>{for(let k=i+1;k<Math.min(lines.length,i+3);k++){let cand=rcCleanName(lines[k]);if(cand&&!/:$/.test(lines[k])&&!RC_STOP.test(n[k]))return cand}return''};
+  for(let i=0;i<lines.length&&!res;i++){
+    let m=n[i].match(lab);
+    if(m){let rest=rcCleanName(lines[i].slice(lines[i].length-(m[2]||'').length));res=rest||nextValue(i)}
+  }
+  if(!res){
+    for(let i=0;i<lines.length&&!res;i++){
+      if(sec.test(n[i])){for(let k=i;k<Math.min(lines.length,i+9);k++){let m=n[k].match(/^(nome|razao social|nome fantasia)\b[:\-]?\s*(.*)$/);if(m){res=rcCleanName(lines[k].slice(lines[k].length-(m[2]||'').length))||nextValue(k);if(res)break}}}
+    }
+  }
+  if(!res&&dir==='in'){
+    for(let i=0;i<lines.length&&!res;i++){if(/recebeu/.test(n[i])){let m=lines[i].match(/\bde\s+(.+)$/i)||(i+1<lines.length&&lines[i+1].match(/^de\s+(.+)$/i));if(m)res=rcCleanName(m[1])}}
+  }
+  return res?rcTitle(res):''
+}
+function parseReceiptText(raw,today){
+  let lines=rcLines(raw),n=rcNorm(lines.join('\n'));
+  let inc=/(pix recebido|transferencia recebida|voce recebeu|deposito recebido|credito recebido|recebimento de pix)/.test(n)&&!/(pix enviado|transferencia enviada|voce (enviou|transferiu|pagou))/.test(n);
+  let dir=inc?'in':'out';
+  let kind=/pagamento de fatura|fatura do cartao|pagamento da fatura/.test(n)?'fatura':/boleto|linha digitavel|codigo de barras/.test(n)?'boleto':/\bpix\b/.test(n)?'pix':/\bted\b|\bdoc\b|transferencia/.test(n)?'transfer':'other';
+  let pv=rcPickValue(lines),who=rcWho(lines,dir);
+  let label={pix:'Pix',boleto:'Boleto',fatura:'Fatura de cartão',transfer:'Transferência',other:'Pagamento'}[kind];
+  let desc=who||(dir==='in'?'Pix recebido':kind==='pix'?'Pix':kind==='boleto'?'Boleto':kind==='fatura'?'Pagamento de fatura':'Pagamento');
+  return{value:pv.value,strong:pv.strong,date:rcPickDate(lines,today),who,desc,kind,kindLabel:label,direction:dir}
+}
+
+function rcFmtDate(d){return new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}).replace(/\./g,'')}
+const RC_CAT_RULES=[
+  [['Farmácia','Saúde'],/farmac|drog|pague menos|raia\b|drogasil|pacheco|panvel/],
+  [['Supermercado','Alimentação'],/supermerc|mercado|atacad|hortifruti|sacolao|assai|carrefour|extra\b|bh\b/],
+  [['Alimentação'],/restaur|lanch|padaria|pizza|ifood|burger|cafe\b|sorvet|acai|marmit|churrasc|bar\b|pao /],
+  [['Combustível','Carro','Transporte'],/posto|combust|shell\b|ipiranga|petrobras|ale\b/],
+  [['Transporte'],/uber|99 ?pop|taxi|onibus|metro\b|estaciona|pedagio|sem parar|conectcar/],
+  [['Educação'],/univers|faculd|escola|colegio|curso|unifran|idioma|ensino/],
+  [['Saúde'],/saude|clinica|hospital|medic|dentist|laborat|plano de|odonto/],
+  [['Moradia'],/aluguel|condominio|imobili/],
+  [['Contas'],/vivo|claro\b|\btim\b|\boi\b|internet|energia|cemig|copasa|sabesp|enel|\bluz\b|agua\b|telefon|\bnet\b|gas\b/],
+  [['Seguros'],/seguro|porto seguro|sulamerica|tokio|bradesco seguros/],
+  [['Pensão'],/pensao/]
+];
+function receiptCategory(p,type){
+  let list=(data.cats&&data.cats[type])||[],find=n=>list.find(c=>rcNorm(c)===rcNorm(n));
+  let key=rcNorm(p.who);
+  if(key){let prev=data.transactions.filter(x=>x.type===type&&rcNorm(x.desc)===key).sort((a,b)=>b.id-a.id)[0];if(prev&&find(prev.category))return find(prev.category)}
+  if(type==='expense'){let hay=rcNorm(p.who+' '+p.desc);for(const [names,re] of RC_CAT_RULES){if(re.test(hay)){for(const n of names){let c=find(n);if(c)return c}}}}
+  return find('Outros')||list[list.length-1]||'Outros'
+}
+function receiptAccount(p){return p.kind==='pix'?'Pix':(p.kind==='boleto'||p.kind==='transfer'||p.kind==='fatura')?'Conta bancária':'Pix'}
+const RC_GENERIC=new Set(['fatura','conta','pagar','cartao','pagamento','mensal','mensalidade','plano','casa','carro','moto']);
+// como cada cartão aparece no nome de quem recebe o pagamento da fatura
+const RC_ALIASES=[['nubank',/nu pagamentos|nubank|nu financeira|nuinvest/],['carrefour',/banco csf|\bcsf\b|carrefour/],['samsung',/samsung|itau unibanco|cartoes itau/],['itau',/itau/],['mercado',/mercado ?pago|mercadopago/],['inter',/banco inter|\binter\b/],['c6',/\bc6\b/],['bradesco',/bradesco/],['santander',/santander/],['caixa',/caixa/],['picpay',/picpay/],['neon',/\bneon\b/],['next',/\bnext\b|bradesco/],['xp',/\bxp\b/],['btg',/\bbtg\b/],['original',/banco original/],['pan',/banco pan/],['bb',/banco do brasil/],['brasil',/banco do brasil/]];
+function receiptMatches(p,text){
+  if(p.direction==='in'||!p.value)return[];
+  let tn=rcNorm(text),months=[...new Set([p.date.slice(0,7),dashboardMonth])],seen=new Set(),out=[];
+  months.forEach(mk=>payPriorityList(mk).forEach(it=>{
+    let k=it.kind+':'+it.id+':'+mk;if(seen.has(k))return;seen.add(k);
+    let exact=Math.abs(it.value-p.value)<0.005,toks=rcNorm(it.label).split(/[^a-z0-9]+/).filter(t=>t.length>=4&&!RC_GENERIC.has(t)),ln=rcNorm(it.label),hit=toks.some(t=>tn.includes(t))||RC_ALIASES.some(([k,re])=>ln.includes(k)&&re.test(tn));
+    if(exact||hit)out.push({...it,mk,exact,hit,score:(exact?3:0)+(hit?2:0)})
+  }));
+  return out.sort((a,b)=>b.score-a.score||a.due.localeCompare(b.due)).slice(0,4)
+}
+let receiptDraft=null;
+function receiptBusy(on){if(on){closeSheets();document.getElementById('receiptBusy').classList.add('show')}else document.getElementById('receiptBusy').classList.remove('show')}
+window.onReceiptReading=function(){receiptBusy(true)};
+window.onReceiptText=function(t){receiptBusy(false);handleReceiptText(t)};
+window.onReceiptError=function(m){receiptBusy(false);showToast(m||'Não consegui ler o comprovante')};
+function pickReceipt(){
+  if(window.AndroidVoice&&typeof window.AndroidVoice.pickReceipt==='function'){closeSheets();window.AndroidVoice.pickReceipt()}
+  else showToast('Ler comprovante funciona no aplicativo instalado')
+}
+function handleReceiptText(text){
+  let p=parseReceiptText(text,iso(new Date()));
+  receiptDraft={p,text,matches:receiptMatches(p,text),rawOpen:false};
+  renderReceiptSheet();closeSheets();document.getElementById('receiptOverlay').classList.add('show')
+}
+function renderReceiptSheet(){
+  let d=receiptDraft;if(!d)return;let p=d.p,body=document.getElementById('rcBody'),title=document.getElementById('rcTitle');
+  let raw=`<button class="linklike" onclick="toggleReceiptRaw()">${d.rawOpen?'Esconder':'Ver'} o texto lido</button>${d.rawOpen?`<div class="rc-raw">${esc(d.text||'(vazio)')}</div>`:''}`;
+  if(!p.value){
+    title.textContent='Não achei o valor';
+    body.innerHTML=`<p class="mini-note" style="margin-top:0">Não consegui identificar o valor nesse comprovante. Tente uma imagem mais nítida, só com o comprovante, ou preencha na mão.</p><button class="save" onclick="receiptManual()">Preencher na mão</button><button class="ghost" onclick="closeSheets()">Cancelar</button>${raw}`;return
+  }
+  let inc=p.direction==='in',type=inc?'income':'expense';
+  title.textContent='Comprovante lido';
+  let dup=data.transactions.find(x=>!x.ignored&&x.type===type&&Math.abs(Number(x.value)-p.value)<0.005&&x.date===p.date);
+  let m=d.matches.map((x,i)=>`<button class="rc-match" onclick="payFromReceipt(${i})"><span class="rc-mi">✓</span><span class="rc-mt"><b>É o pagamento de ${esc(x.label)}</b><span>${brl(x.value)} · vence ${fmtShort(x.due)}${x.exact?'':' · valor diferente do app'}</span></span></button>`).join('');
+  body.innerHTML=`<div class="rc-ticket"><small>${esc(p.kindLabel)} · ${inc?'entrada':'saída'}</small><div class="rc-val ${inc?'in':'out'}">${inc?'+ ':''}${brl(p.value)}</div><div class="rc-who">${esc(p.who||p.desc)}</div><div class="rc-meta">${rcFmtDate(p.date)}${p.strong?'':' · confira o valor'}</div></div>`
+   +(dup?`<div class="rc-warn">⚠️ Já existe ${inc?'uma entrada':'um gasto'} de ${brl(p.value)} nessa data: “${esc(dup.desc)}”. Salvar de novo vai duplicar.</div>`:'')
+   +(m?`<div class="rc-sec">Isso paga alguma conta da lista?</div>${m}`:'')
+   +`<button class="save" onclick="saveReceiptAsIs()">${inc?'Lançar como entrada':'Lançar como saída'}</button><button class="ghost" onclick="reviewReceipt()">Revisar e editar antes</button><button class="ghost" onclick="closeSheets()">Cancelar</button>${raw}`
+}
+function toggleReceiptRaw(){if(!receiptDraft)return;receiptDraft.rawOpen=!receiptDraft.rawOpen;renderReceiptSheet()}
+function receiptPrefill(){
+  let p=receiptDraft.p,type=p.direction==='in'?'income':'expense';
+  closeSheets();openAdd(type);
+  document.getElementById('value').value=p.value?p.value.toFixed(2).replace('.',','):'';
+  document.getElementById('desc').value=p.desc;document.getElementById('date').value=p.date;
+  let cat=receiptCategory(p,type),sel=document.getElementById('category');if(Array.from(sel.options).some(o=>o.value===cat)){sel.value=cat;sel.dataset.prev=cat}categoryManuallySet=true;
+  let acc=receiptAccount(p),as=document.getElementById('account');if(Array.from(as.options).some(o=>o.value===acc))as.value=acc;
+  document.getElementById('txTags').value='comprovante'
+}
+function saveReceiptAsIs(){if(!receiptDraft)return;receiptPrefill();saveTransaction()}
+function reviewReceipt(){if(!receiptDraft)return;receiptPrefill();showToast('Confira os dados e salve')}
+function receiptManual(){closeSheets();openAdd('expense');if(receiptDraft){document.getElementById('date').value=receiptDraft.p.date}}
+function payFromReceipt(i){
+  let d=receiptDraft;if(!d)return;let m=d.matches[i],p=d.p;if(!m)return;
+  if(m.kind==='tx'){let tx=data.transactions.find(x=>x.id===m.id);if(tx){tx.paid=true;tx.paidAt=p.date;if(Math.abs(Number(tx.value)-p.value)>0.004)tx.value=p.value;save()}}
+  else{if(!isPaid(m.kind,m.id,m.mk))togglePaid(m.kind,m.id,m.mk);let rec=paymentRecord(m.kind,m.id,m.mk);if(rec){rec.amount=p.value;rec.paidAt=p.date;save()}}
+  closeSheets();showToast(`${m.label} marcado como pago · ${brl(p.value)}`)
+}
 function openVoice(){voiceDraft=null;document.getElementById('voiceSave').style.display='none';document.getElementById('transcript').textContent='Ex.: “Gastei 87 reais no supermercado” ou “quanto gastei este mês?”';document.getElementById('voiceStatus').textContent='Toque e fale um lançamento ou uma pergunta.';document.getElementById('voiceOverlay').classList.add('show')}
 function applyVoiceText(t){let btn=document.getElementById('micBtn');btn.classList.remove('listening');document.getElementById('transcript').textContent=t;if(isFinancialQuestion(t)){let answer=financialAnswer(t);voiceDraft=null;document.getElementById('voiceSave').style.display='none';if(answer){document.getElementById('voiceStatus').textContent=answer;document.getElementById('transcript').textContent=`Você: ${t}\n\nMeu Dinheiro: ${answer}`;speakText(answer)}else document.getElementById('voiceStatus').textContent='Ainda não consegui responder essa pergunta.';return}voiceDraft=parseVoice(t);document.getElementById('voiceStatus').textContent=voiceDraft?`Entendi: ${voiceDraft.type==='income'?'entrada':'saída'} de ${brl(voiceDraft.value)}.`:'Não consegui entender. Tente fazer um lançamento ou uma pergunta sobre seus gastos.';document.getElementById('voiceSave').style.display=voiceDraft?'block':'none'}
 window.onNativeVoiceResult=t=>applyVoiceText(t);

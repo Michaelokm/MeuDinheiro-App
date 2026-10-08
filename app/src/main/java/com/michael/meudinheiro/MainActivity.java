@@ -26,6 +26,17 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.pdf.PdfRenderer;
+import android.media.ExifInterface;
+import android.os.ParcelFileDescriptor;
+
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.text.TextRecognition;
+import com.google.mlkit.vision.text.TextRecognizer;
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -38,6 +49,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.ByteArrayOutputStream;
@@ -48,6 +61,7 @@ public class MainActivity extends Activity {
     private static final int NOTIFICATION_REQUEST = 4018;
     private static final int BACKUP_EXPORT_REQUEST = 4019;
     private static final int BACKUP_IMPORT_REQUEST = 4020;
+    private static final int RECEIPT_PICK_REQUEST = 4021;
     private boolean suppressNextRelock = false;
     private static final String CHANNEL_ID = "vencimentos";
     private static final String PREFS = "meu_dinheiro_reminders";
@@ -60,6 +74,9 @@ public class MainActivity extends Activity {
     private TextToSpeech textToSpeech;
     private boolean ttsReady = false;
     private String pendingBackupJson = null;
+    private boolean pageReady = false;
+    private Intent pendingShareIntent = null;
+    private TextRecognizer receiptRecognizer = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,11 +109,32 @@ public class MainActivity extends Activity {
         settings.setDisplayZoomControls(false);
         settings.setMediaPlaybackRequiresUserGesture(true);
 
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                pageReady = true;
+                if (pendingShareIntent != null) {
+                    Intent shared = pendingShareIntent;
+                    pendingShareIntent = null;
+                    handleIncomingIntent(shared);
+                }
+            }
+        });
         webView.setWebChromeClient(new WebChromeClient());
         webView.addJavascriptInterface(new VoiceBridge(), "AndroidVoice");
         setContentView(webView);
+        if (isShareIntent(getIntent())) pendingShareIntent = getIntent();
         webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (!isShareIntent(intent)) return;
+        if (pageReady) handleIncomingIntent(intent);
+        else pendingShareIntent = intent;
     }
 
     public class VoiceBridge {
@@ -179,6 +217,22 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void cancelDailyReminder() {
             runOnUiThread(() -> MainActivity.cancelDailyReminder(MainActivity.this));
+        }
+
+        @JavascriptInterface
+        public void pickReceipt() {
+            runOnUiThread(() -> {
+                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType("*/*");
+                intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "application/pdf"});
+                try {
+                    suppressNextRelock = true;
+                    startActivityForResult(intent, RECEIPT_PICK_REQUEST);
+                } catch (Exception e) {
+                    sendReceiptError("Não foi possível abrir o seletor de arquivos.");
+                }
+            });
         }
 
         @JavascriptInterface
@@ -517,6 +571,13 @@ public class MainActivity extends Activity {
             return;
         }
 
+        if (requestCode == RECEIPT_PICK_REQUEST) {
+            if (resultCode == RESULT_OK && data != null && data.getData() != null) {
+                processReceiptUri(data.getData(), data.getType());
+            }
+            return;
+        }
+
         if (requestCode != VOICE_REQUEST) return;
 
         if (resultCode == RESULT_OK && data != null) {
@@ -559,6 +620,186 @@ public class MainActivity extends Activity {
         webView.evaluateJavascript(js, null);
     }
 
+
+    // ===== Ler comprovante (imagem ou PDF) com reconhecimento de texto no próprio aparelho =====
+    private static boolean isShareIntent(Intent intent) {
+        return intent != null && Intent.ACTION_SEND.equals(intent.getAction());
+    }
+
+    private void handleIncomingIntent(Intent intent) {
+        if (!isShareIntent(intent)) return;
+        Uri uri;
+        if (Build.VERSION.SDK_INT >= 33) {
+            uri = intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri.class);
+        } else {
+            uri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
+        }
+        String type = intent.getType();
+        intent.setAction(Intent.ACTION_MAIN);
+        if (uri == null) {
+            sendReceiptError("Não recebi nenhum arquivo para ler.");
+            return;
+        }
+        processReceiptUri(uri, type);
+    }
+
+    private void processReceiptUri(final Uri uri, final String mimeHint) {
+        sendReceiptReading();
+        new Thread(() -> {
+            try {
+                String mime = mimeHint;
+                if (mime == null || mime.isEmpty() || mime.contains("*")) mime = getContentResolver().getType(uri);
+                String lowerUri = String.valueOf(uri).toLowerCase(Locale.ROOT);
+                boolean isPdf = (mime != null && mime.toLowerCase(Locale.ROOT).contains("pdf")) || lowerUri.endsWith(".pdf");
+                Bitmap bitmap;
+                int rotation = 0;
+                if (isPdf) {
+                    bitmap = renderPdfFirstPage(uri);
+                } else {
+                    bitmap = decodeReceiptBitmap(uri);
+                    rotation = readExifRotation(uri);
+                }
+                if (bitmap == null) {
+                    sendReceiptError("Não consegui abrir esse arquivo.");
+                    return;
+                }
+                recognizeReceipt(bitmap, rotation);
+            } catch (SecurityException e) {
+                sendReceiptError("Esse PDF está protegido por senha.");
+            } catch (OutOfMemoryError e) {
+                sendReceiptError("A imagem é grande demais para ler.");
+            } catch (Exception e) {
+                sendReceiptError("Não consegui abrir esse arquivo.");
+            }
+        }).start();
+    }
+
+    private Bitmap decodeReceiptBitmap(Uri uri) throws Exception {
+        BitmapFactory.Options bounds = new BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        InputStream first = getContentResolver().openInputStream(uri);
+        if (first == null) return null;
+        try {
+            BitmapFactory.decodeStream(first, null, bounds);
+        } finally {
+            first.close();
+        }
+        int width = bounds.outWidth;
+        int height = bounds.outHeight;
+        if (width <= 0 || height <= 0) return null;
+        int sample = 1;
+        while ((long) (width / sample) * (long) (height / sample) > 10000000L) sample *= 2;
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = sample;
+        InputStream second = getContentResolver().openInputStream(uri);
+        if (second == null) return null;
+        try {
+            return BitmapFactory.decodeStream(second, null, options);
+        } finally {
+            second.close();
+        }
+    }
+
+    private int readExifRotation(Uri uri) {
+        try {
+            InputStream in = getContentResolver().openInputStream(uri);
+            if (in == null) return 0;
+            try {
+                ExifInterface exif = new ExifInterface(in);
+                int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                if (orientation == ExifInterface.ORIENTATION_ROTATE_90) return 90;
+                if (orientation == ExifInterface.ORIENTATION_ROTATE_180) return 180;
+                if (orientation == ExifInterface.ORIENTATION_ROTATE_270) return 270;
+            } finally {
+                in.close();
+            }
+        } catch (Exception ignored) {
+            // sem informação de rotação: segue com a imagem como está
+        }
+        return 0;
+    }
+
+    private Bitmap renderPdfFirstPage(Uri uri) throws Exception {
+        File temp = new File(getCacheDir(), "comprovante.pdf");
+        InputStream in = getContentResolver().openInputStream(uri);
+        if (in == null) return null;
+        try {
+            FileOutputStream out = new FileOutputStream(temp);
+            try {
+                byte[] chunk = new byte[8192];
+                int n;
+                while ((n = in.read(chunk)) != -1) out.write(chunk, 0, n);
+            } finally {
+                out.close();
+            }
+        } finally {
+            in.close();
+        }
+        ParcelFileDescriptor descriptor = ParcelFileDescriptor.open(temp, ParcelFileDescriptor.MODE_READ_ONLY);
+        PdfRenderer renderer = null;
+        try {
+            renderer = new PdfRenderer(descriptor);
+            if (renderer.getPageCount() <= 0) return null;
+            PdfRenderer.Page page = renderer.openPage(0);
+            try {
+                float scale = Math.max(2f, 1800f / Math.max(1, page.getWidth()));
+                int width = Math.round(page.getWidth() * scale);
+                int height = Math.round(page.getHeight() * scale);
+                Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                bitmap.eraseColor(Color.WHITE);
+                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                return bitmap;
+            } finally {
+                page.close();
+            }
+        } finally {
+            if (renderer != null) renderer.close();
+            descriptor.close();
+            temp.delete();
+        }
+    }
+
+    private void recognizeReceipt(final Bitmap bitmap, final int rotation) {
+        runOnUiThread(() -> {
+            try {
+                if (receiptRecognizer == null) {
+                    receiptRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+                }
+                InputImage image = InputImage.fromBitmap(bitmap, rotation);
+                receiptRecognizer.process(image)
+                        .addOnSuccessListener(visionText -> {
+                            String text = visionText.getText();
+                            if (text == null || text.trim().isEmpty()) {
+                                sendReceiptError("Não encontrei texto nessa imagem.");
+                            } else {
+                                sendReceiptText(text);
+                            }
+                        })
+                        .addOnFailureListener(e -> sendReceiptError("Não consegui ler o texto desse comprovante."));
+            } catch (Exception e) {
+                sendReceiptError("Não consegui ler o texto desse comprovante.");
+            }
+        });
+    }
+
+    private void sendReceiptReading() {
+        if (webView == null) return;
+        runOnUiThread(() -> webView.evaluateJavascript(
+                "window.onReceiptReading && window.onReceiptReading();", null));
+    }
+
+    private void sendReceiptText(String text) {
+        if (webView == null) return;
+        final String js = "window.onReceiptText && window.onReceiptText(" + JSONObject.quote(text) + ");";
+        runOnUiThread(() -> webView.evaluateJavascript(js, null));
+    }
+
+    private void sendReceiptError(String message) {
+        if (webView == null) return;
+        final String js = "window.onReceiptError && window.onReceiptError(" + JSONObject.quote(message) + ");";
+        runOnUiThread(() -> webView.evaluateJavascript(js, null));
+    }
+
     @Override
     public void onBackPressed() {
         if (webView == null) {
@@ -580,6 +821,14 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (receiptRecognizer != null) {
+            try {
+                receiptRecognizer.close();
+            } catch (Exception ignored) {
+                // nada a fazer ao fechar o leitor
+            }
+            receiptRecognizer = null;
+        }
         if (textToSpeech != null) {
             textToSpeech.stop();
             textToSpeech.shutdown();
