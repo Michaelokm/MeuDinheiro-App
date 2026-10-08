@@ -401,7 +401,7 @@
       <button class="danger" onclick="clearData()">🗑️ Apagar todos os dados</button>
     </div>
     <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)" />
-    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 1.1 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.5;padding:8px 5px">Versão 1.2 · Os dados ficam no aparelho. Use o backup antes de trocar, reinstalar ou limpar o app. O arquivo inclui lançamentos, contas fixas, cartões, faturas, pagamentos, limites, metas e categorias.</p>
   </section>
 
   <button class="fab" id="fab" onclick="fabAdd()">＋</button>
@@ -1379,7 +1379,7 @@ function duplicateCardItem(id){
 let ppIncomeValue=0,ppMonth='',ppOpen={daily:false,inc:false};
 function payFlows(mk){
   let tx=data.transactions.filter(x=>monthKey(x.date||'')===mk&&!x.ignored),num=v=>Number(v||0),byDate=(a,b)=>(b.date||'').localeCompare(a.date||'');
-  let incomes=tx.filter(x=>x.type==='income').map(x=>({label:x.desc,date:x.date,value:num(x.value)})).sort(byDate);
+  let incomes=tx.filter(x=>x.type==='income').map(x=>({id:x.id,label:x.desc,date:x.date,value:num(x.value)})).sort(byDate);
   let bills=[];
   data.payments.filter(p=>p.month===mk).forEach(p=>{
     if(p.kind==='fixed'){let f=data.fixed.find(x=>x.id===p.itemId);if(f)bills.push({icon:'🔁',label:f.desc,tag:'Conta fixa',date:p.paidAt||mk+'-01',value:num(p.amount),edit:`editPaymentAmount(${p.id})`,undo:`payPriorityUndo('fixed',${p.itemId})`})}
@@ -1388,7 +1388,7 @@ function payFlows(mk){
   tx.filter(x=>x.type==='expense'&&x.dueDate&&x.paid).forEach(x=>bills.push({icon:'🧾',label:x.desc,tag:'Conta a pagar',date:x.paidAt||x.dueDate,value:num(x.value),undo:`payPriorityUndo('tx',${x.id})`}));
   bills.sort(byDate);
   let exp=tx.filter(x=>x.type==='expense'&&!x.dueDate);
-  let daily=exp.filter(x=>x.account!=='Crédito').map(x=>({label:x.desc,date:x.date,value:num(x.value),sub:[x.category,x.account].filter(Boolean).join(' · ')})).sort(byDate);
+  let daily=exp.filter(x=>x.account!=='Crédito').map(x=>({id:x.id,label:x.desc,date:x.date,value:num(x.value),sub:[x.category,x.account].filter(Boolean).join(' · ')})).sort(byDate);
   let credit=exp.filter(x=>x.account==='Crédito').reduce((a,x)=>a+num(x.value),0);
   let sum=a=>a.reduce((t,x)=>t+x.value,0),received=sum(incomes),paidBills=sum(bills),paidDaily=sum(daily);
   return{incomes,bills,daily,credit,received,paidBills,paidDaily,available:received-paidBills-paidDaily}
@@ -1416,8 +1416,8 @@ function renderPayPriority(){
   document.getElementById('ppList').innerHTML=rows||'<div class="empty">Nenhuma conta fixa, fatura ou conta a pagar pendente.</div>';
   const grp=(k,title,total,items,fmt)=>`<div class="pp-grp" onclick="togglePpGroup('${k}')"><span>${ppOpen[k]?'▾':'▸'} ${title}</span><span>${brl(total)} · ${items.length}</span></div>`+(ppOpen[k]?(items.length?items.map(fmt).join(''):'<div class="empty">Nada por aqui.</div>'):'');
   let paid=`<div class="pp-sec"><span>✅ Já paguei</span><span id="ppPaidTotal">${brl(f.paidBills)} · ${f.bills.length}</span></div>`+(f.bills.length?f.bills.map(b=>`<div class="pp-paidrow"><div style="font-size:18px">${b.icon}</div><div style="flex:1"><div style="font-weight:700">${esc(b.label)}</div><div class="cat-sub">${b.tag} · ${fmtShort(b.date)}</div></div><b style="color:var(--green)">${brl(b.value)}</b>${b.edit?`<button class="idel" style="margin-left:4px" title="Corrigir o valor pago" onclick="${b.edit}">✏️</button>`:''}${b.undo?`<button class="idel" style="margin-left:4px" title="Desfazer (volta pra pendente)" onclick="${b.undo}">↩</button>`:''}</div>`).join(''):'<div class="empty">Nenhuma conta marcada como paga neste mês ainda.</div>');
-  paid+=grp('daily','🛒 Gastos do dia a dia',f.paidDaily,f.daily,d=>`<div class="pp-paidrow"><div style="flex:1"><div style="font-weight:700">${esc(d.label)}</div><div class="cat-sub">${esc(d.sub)} · ${fmtShort(d.date)}</div></div><b style="color:var(--amber)">${brl(d.value)}</b></div>`);
-  paid+=grp('inc','💰 Entradas do mês',f.received,f.incomes,d=>`<div class="pp-paidrow"><div style="flex:1"><div style="font-weight:700">${esc(d.label)}</div><div class="cat-sub">${fmtShort(d.date)}</div></div><b style="color:var(--green)">${brl(d.value)}</b></div>`);
+  paid+=grp('daily','🛒 Gastos do dia a dia',f.paidDaily,f.daily,d=>`<div class="pp-paidrow"><div style="flex:1"><div style="font-weight:700">${esc(d.label)}</div><div class="cat-sub">${esc(d.sub)} · ${fmtShort(d.date)}</div></div><b style="color:var(--amber)">${brl(d.value)}</b>${ppTxBtns(d.id)}</div>`);
+  paid+=grp('inc','💰 Entradas do mês',f.received,f.incomes,d=>`<div class="pp-paidrow"><div style="flex:1"><div style="font-weight:700">${esc(d.label)}</div><div class="cat-sub">${fmtShort(d.date)}</div></div><b style="color:var(--green)">${brl(d.value)}</b>${ppTxBtns(d.id)}</div>`);
   if(f.credit>0.004)paid+=`<div class="mini-note" style="margin-top:8px">💳 Você também lançou ${brl(f.credit)} em compras no crédito. Elas não foram descontadas do disponível: só saem do bolso quando a fatura for paga.</div>`;
   document.getElementById('ppPaidBox').innerHTML=paid
 }
@@ -1447,6 +1447,9 @@ function savePaymentAmount(){
   if(!(v>0))return showToast('Informe o valor pago');
   p.amount=v;save();closePayAmount();renderPayPriority();showToast('Valor pago atualizado')
 }
+function ppTxBtns(id){return id==null?'':`<button class="idel" style="margin-left:4px" title="Editar" onclick="ppEditTx(${id})">✏️</button><button class="idel" style="margin-left:4px" title="Excluir" onclick="ppDeleteTx(${id})">🗑</button>`}
+function ppEditTx(id){closeSheets();openEditTransaction(id)}
+function ppDeleteTx(id){let tx=data.transactions.find(x=>x.id===id);if(!tx)return;if(confirm(`Excluir o lançamento "${tx.desc}" de ${brl(tx.value)}?`)){data.transactions=data.transactions.filter(x=>x.id!==id);save();renderPayPriority();showToast('Lançamento excluído')}}
 function togglePpGroup(k){ppOpen[k]=!ppOpen[k];renderPayPriority()}
 function showPayPriority(value,mk){
   if(payPriorityList(mk).length===0)return;
@@ -1456,10 +1459,15 @@ function showPayPriority(value,mk){
 }
 function openPayPriority(){ppIncomeValue=0;ppMonth=dashboardMonth;renderPayPriority();document.getElementById('payPriorityOverlay').classList.add('show')}
 function payPriorityMark(kind,id){
-  if(kind==='tx'){let tx=data.transactions.find(x=>x.id===id);if(tx){tx.paid=true;tx.paidAt=iso(new Date());save();showToast('Marcado como pago')}}
-  else togglePaid(kind,id,ppMonth);
+  let label='',value=0,exceptId=null;
+  if(kind==='tx'){let tx=data.transactions.find(x=>x.id===id);if(tx){label=tx.desc;value=Number(tx.value||0);exceptId=tx.id;tx.paid=true;tx.paidAt=iso(new Date());save();showToast('Marcado como pago')}}
+  else{togglePaid(kind,id,ppMonth);let it=payPriorityList(ppMonth).find(x=>x.kind===kind&&x.id===id);
+    if(kind==='fixed'){let f=data.fixed.find(x=>x.id===id);if(f){label=f.desc;let r=paymentRecord('fixed',id,ppMonth);value=r?Number(r.amount||f.value||0):Number(f.value||0)}}
+    else{let c=data.cards.find(x=>x.id===id);if(c){label='Fatura '+c.name;let r=paymentRecord('card',id,ppMonth);value=r?Number(r.amount||0):0}}}
+  if(label&&value>0.004&&isPaidAny(kind,id))offerRemoveReceiptDup(value,label,exceptId);
   renderPayPriority()
 }
+function isPaidAny(kind,id){if(kind==='tx'){let t=data.transactions.find(x=>x.id===id);return !!(t&&t.paid)}return isPaid(kind,id,ppMonth)}
 function payPriorityUndo(kind,id){
   if(kind==='tx'){let tx=data.transactions.find(x=>x.id===id);if(tx){tx.paid=false;delete tx.paidAt;save();showToast('Voltou pra lista de pendentes')}}
   else togglePaid(kind,id,ppMonth);
@@ -1669,6 +1677,12 @@ function receiptMatches(p,text){
   return out.sort((a,b)=>b.score-a.score||a.due.localeCompare(b.due)).slice(0,4)
 }
 let receiptDraft=null;
+function receiptAllPending(p){
+  let months=[...new Set([p.date.slice(0,7),dashboardMonth])],seen=new Set(),out=[];
+  months.forEach(mk=>payPriorityList(mk).forEach(it=>{let k=it.kind+':'+it.id;if(seen.has(k))return;seen.add(k);out.push({...it,mk,exact:Math.abs(it.value-p.value)<0.005})}));
+  return out.sort((a,b)=>(b.exact-a.exact)||a.due.localeCompare(b.due)).slice(0,15)
+}
+
 function receiptBusy(on){if(on){closeSheets();document.getElementById('receiptBusy').classList.add('show')}else document.getElementById('receiptBusy').classList.remove('show')}
 window.onReceiptReading=function(){receiptBusy(true)};
 window.onReceiptText=function(t){receiptBusy(false);handleReceiptText(t)};
@@ -1679,7 +1693,7 @@ function pickReceipt(){
 }
 function handleReceiptText(text){
   let p=parseReceiptText(text,iso(new Date()));
-  receiptDraft={p,text,matches:receiptMatches(p,text),rawOpen:false};
+  receiptDraft={p,text,matches:receiptMatches(p,text),all:receiptAllPending(p),rawOpen:false,allOpen:false};
   renderReceiptSheet();closeSheets();document.getElementById('receiptOverlay').classList.add('show')
 }
 function renderReceiptSheet(){
@@ -1691,13 +1705,21 @@ function renderReceiptSheet(){
   }
   let inc=p.direction==='in',type=inc?'income':'expense';
   title.textContent='Comprovante lido';
-  let dup=data.transactions.find(x=>!x.ignored&&x.type===type&&Math.abs(Number(x.value)-p.value)<0.005&&x.date===p.date);
-  let m=d.matches.map((x,i)=>`<button class="rc-match" onclick="payFromReceipt(${i})"><span class="rc-mi">✓</span><span class="rc-mt"><b>É o pagamento de ${esc(x.label)}</b><span>${brl(x.value)} · vence ${fmtShort(x.due)}${x.exact?'':' · valor diferente do app'}</span></span></button>`).join('');
-  body.innerHTML=`<div class="rc-ticket"><small>${esc(p.kindLabel)} · ${inc?'entrada':'saída'}</small><div class="rc-val ${inc?'in':'out'}">${inc?'+ ':''}${brl(p.value)}</div><div class="rc-who">${esc(p.who||p.desc)}</div><div class="rc-meta">${rcFmtDate(p.date)}${p.strong?'':' · confira o valor'}</div></div>`
-   +(dup?`<div class="rc-warn">⚠️ Já existe ${inc?'uma entrada':'um gasto'} de ${brl(p.value)} nessa data: “${esc(dup.desc)}”. Salvar de novo vai duplicar.</div>`:'')
-   +(m?`<div class="rc-sec">Isso paga alguma conta da lista?</div>${m}`:'')
-   +`<button class="save" onclick="saveReceiptAsIs()">${inc?'Lançar como entrada':'Lançar como saída'}</button><button class="ghost" onclick="reviewReceipt()">Revisar e editar antes</button><button class="ghost" onclick="closeSheets()">Cancelar</button>${raw}`
+  let dup=data.transactions.find(x=>!x.ignored&&x.type===type&&Math.abs(Number(x.value)-p.value)<0.005&&x.date===p.date&&!x.dueDate);
+  let ticket=`<div class="rc-ticket"><small>${esc(p.kindLabel)} · ${inc?'entrada':'saída'}</small><div class="rc-val ${inc?'in':'out'}">${inc?'+ ':''}${brl(p.value)}</div><div class="rc-who">${esc(p.who||p.desc)}</div><div class="rc-meta">${rcFmtDate(p.date)}${p.strong?'':' · confira o valor'}</div></div>`;
+  let warn=dup?`<div class="rc-warn">⚠️ Já existe ${inc?'uma entrada':'um gasto'} de ${brl(p.value)} nessa data: “${esc(dup.desc)}”. Lançar de novo vai duplicar.</div>`:'';
+  let rowHtml=(x,i,fn)=>`<button class="rc-match" onclick="${fn}(${i})"><span class="rc-mi">✓</span><span class="rc-mt"><b>${esc(x.label)}</b><span>${brl(x.value)} · vence ${fmtShort(x.due)}${x.exact?'':' · valor diferente do app'}</span></span></button>`;
+  let hasM=!inc&&d.matches.length>0,pend=inc?[]:d.all||[];
+  if(!hasM){
+    let allBox=pend.length?(d.allOpen?`<div class="rc-sec">Qual conta você pagou?</div>${pend.map((x,i)=>rowHtml(x,i,'payFromReceiptAll')).join('')}`:`<button class="ghost" onclick="toggleReceiptAll()">Foi pagamento de uma conta pendente</button>`):'';
+    body.innerHTML=ticket+warn+''+allBox+`<button class="save" onclick="saveReceiptAsIs()">${inc?'Lançar como entrada':'Lançar como gasto novo'}</button><button class="ghost" onclick="reviewReceipt()">Revisar e editar antes</button><button class="ghost" onclick="closeSheets()">Cancelar</button>${raw}`;return
+  }
+  let m0=d.matches[0],others=d.matches.slice(1);
+  let more=others.length?`<div class="rc-sec">Ou outra conta parecida</div>${others.map((x,i)=>rowHtml(x,i+1,'payFromReceipt')).join('')}`:'';
+  let rest=d.allOpen?`<div class="rc-sec">Todas as contas pendentes</div>${pend.map((x,i)=>rowHtml(x,i,'payFromReceiptAll')).join('')}`:(pend.length>d.matches.length?`<button class="ghost" onclick="toggleReceiptAll()">Foi outra conta da lista</button>`:'');
+  body.innerHTML=ticket+warn+`<div class="mini-note" style="margin:10px 2px 0">Parece o pagamento de <b>${esc(m0.label)}</b>${m0.exact?' (mesmo valor)':''}. Marcar como paga já desconta do disponível, não precisa lançar de novo.</div><button class="save" onclick="payFromReceipt(0)">✓ Marcar “${esc(m0.label)}” como paga</button>`+more+rest+`<button class="ghost" onclick="saveReceiptAsIs()">Não é conta da lista: lançar como gasto novo</button><button class="ghost" onclick="closeSheets()">Cancelar</button>${raw}`
 }
+function toggleReceiptAll(){if(!receiptDraft)return;receiptDraft.allOpen=!receiptDraft.allOpen;renderReceiptSheet()}
 function toggleReceiptRaw(){if(!receiptDraft)return;receiptDraft.rawOpen=!receiptDraft.rawOpen;renderReceiptSheet()}
 function receiptPrefill(){
   let p=receiptDraft.p,type=p.direction==='in'?'income':'expense';
@@ -1708,15 +1730,35 @@ function receiptPrefill(){
   let acc=receiptAccount(p),as=document.getElementById('account');if(Array.from(as.options).some(o=>o.value===acc))as.value=acc;
   document.getElementById('txTags').value='comprovante'
 }
-function saveReceiptAsIs(){if(!receiptDraft)return;receiptPrefill();saveTransaction()}
+function saveReceiptAsIs(){
+  if(!receiptDraft)return;let p=receiptDraft.p;
+  if(p.direction!=='in'){let ex=(receiptDraft.all||[]).find(x=>x.exact);
+    if(ex&&!confirm(`Já existe a conta “${ex.label}” de ${brl(ex.value)} pendente. Se esse pagamento é dela, o certo é marcá-la como paga (senão o valor é descontado em dobro).\n\nLançar mesmo assim como gasto novo?`))return}
+  receiptPrefill();saveTransaction()
+}
 function reviewReceipt(){if(!receiptDraft)return;receiptPrefill();showToast('Confira os dados e salve')}
 function receiptManual(){closeSheets();openAdd('expense');if(receiptDraft){document.getElementById('date').value=receiptDraft.p.date}}
-function payFromReceipt(i){
-  let d=receiptDraft;if(!d)return;let m=d.matches[i],p=d.p;if(!m)return;
-  if(m.kind==='tx'){let tx=data.transactions.find(x=>x.id===m.id);if(tx){tx.paid=true;tx.paidAt=p.date;if(Math.abs(Number(tx.value)-p.value)>0.004)tx.value=p.value;save()}}
-  else{if(!isPaid(m.kind,m.id,m.mk))togglePaid(m.kind,m.id,m.mk);let rec=paymentRecord(m.kind,m.id,m.mk);if(rec){rec.amount=p.value;rec.paidAt=p.date;save()}}
-  closeSheets();showToast(`${m.label} marcado como pago · ${brl(p.value)}`)
+function receiptDupCandidates(value,exceptId){
+  return data.transactions.filter(x=>x.type==='expense'&&!x.dueDate&&!x.ignored&&x.id!==exceptId&&Math.abs(Number(x.value)-value)<0.005&&(x.tags||[]).includes('comprovante'))
 }
+function offerRemoveReceiptDup(value,label,exceptId){
+  let c=receiptDupCandidates(value,exceptId);if(!c.length)return false;
+  let x=c.sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0];
+  if(confirm(`Você já tinha lançado ${brl(x.value)} (“${x.desc}”, ${fmtShort(x.date)}) a partir de um comprovante. Como agora “${label}” foi marcada como paga, esse gasto ficou repetido.\n\nExcluir o gasto repetido?`)){
+    data.transactions=data.transactions.filter(t=>t.id!==x.id);save();return true}
+  return false
+}
+function doReceiptPay(m){
+  let d=receiptDraft;if(!d||!m)return;let p=d.p,paidAt=p.date;
+  if(m.kind==='tx'){let tx=data.transactions.find(x=>x.id===m.id);if(!tx)return;tx.paid=true;tx.paidAt=paidAt;if(Math.abs(Number(tx.value)-p.value)>0.004)tx.value=p.value;save()}
+  else{if(!isPaid(m.kind,m.id,m.mk))togglePaid(m.kind,m.id,m.mk);let rec=paymentRecord(m.kind,m.id,m.mk);if(rec){rec.amount=p.value;rec.paidAt=paidAt;save()}}
+  closeSheets();
+  let removed=offerRemoveReceiptDup(p.value,m.label,m.kind==='tx'?m.id:null);
+  showToast(`${m.label} marcado como pago · ${brl(p.value)}${removed?' · gasto repetido excluído':''}`);
+  if(document.getElementById('payPriorityOverlay').classList.contains('show'))renderPayPriority()
+}
+function payFromReceipt(i){let d=receiptDraft;if(!d)return;doReceiptPay(d.matches[i])}
+function payFromReceiptAll(i){let d=receiptDraft;if(!d)return;doReceiptPay((d.all||[])[i])}
 function openVoice(){voiceDraft=null;document.getElementById('voiceSave').style.display='none';document.getElementById('transcript').textContent='Ex.: “Gastei 87 reais no supermercado” ou “quanto gastei este mês?”';document.getElementById('voiceStatus').textContent='Toque e fale um lançamento ou uma pergunta.';document.getElementById('voiceOverlay').classList.add('show')}
 function applyVoiceText(t){let btn=document.getElementById('micBtn');btn.classList.remove('listening');document.getElementById('transcript').textContent=t;if(isFinancialQuestion(t)){let answer=financialAnswer(t);voiceDraft=null;document.getElementById('voiceSave').style.display='none';if(answer){document.getElementById('voiceStatus').textContent=answer;document.getElementById('transcript').textContent=`Você: ${t}\n\nMeu Dinheiro: ${answer}`;speakText(answer)}else document.getElementById('voiceStatus').textContent='Ainda não consegui responder essa pergunta.';return}voiceDraft=parseVoice(t);document.getElementById('voiceStatus').textContent=voiceDraft?`Entendi: ${voiceDraft.type==='income'?'entrada':'saída'} de ${brl(voiceDraft.value)}.`:'Não consegui entender. Tente fazer um lançamento ou uma pergunta sobre seus gastos.';document.getElementById('voiceSave').style.display=voiceDraft?'block':'none'}
 window.onNativeVoiceResult=t=>applyVoiceText(t);
